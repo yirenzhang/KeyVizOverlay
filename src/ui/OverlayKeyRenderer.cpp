@@ -46,7 +46,7 @@ void DrawKeyCap(const char* label, float animationValue, bool wasPressed, float 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f * metrics.scale);
 
     const ImVec4 transparentFill = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-    const ImVec4 fillBaseColor = ImVec4(0.20f, 0.58f, 0.96f, 0.40f);
+    const ImVec4 fillBaseColor = ImVec4(0.00f, 0.78f, 1.00f, 0.58f);
     const ImVec4 flashColor = ImVec4(0.96f, 0.74f, 0.24f, 1.0f);
     const ImVec4 borderColor = ImVec4(0.92f, 0.95f, 1.00f, 0.92f);
     const ImVec4 textColor = ImVec4(0.95f, 0.97f, 1.00f, 0.98f);
@@ -54,7 +54,7 @@ void DrawKeyCap(const char* label, float animationValue, bool wasPressed, float 
     ImVec4 fillColor = LerpColor(transparentFill, fillBaseColor, animationValue);
     if (wasPressed)
     {
-        fillColor = LerpColor(fillColor, flashColor, 0.35f);
+        fillColor = LerpColor(fillColor, flashColor, 0.45f);
     }
 
     ImGui::PushStyleColor(ImGuiCol_Button, fillColor);
