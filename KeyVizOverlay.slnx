@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="KeyVizOverlay.vcxproj" Id="2f4dbe80-8b7c-44fc-b6c1-280dfeb35413" />
+</Solution>
