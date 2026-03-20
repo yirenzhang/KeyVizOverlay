@@ -5,6 +5,8 @@
 
 #include "effects/GlowEffect.h"
 #include "input/InputService.h"
+#include "OverlayUICallbacks.h"
+#include "OverlayRenderContext.h"
 #include "imgui.h"
 
 namespace keyviz
@@ -12,9 +14,9 @@ namespace keyviz
 class OverlayUI
 {
 public:
-    using ExitRequestHandler = void (*)(void* context);
-    using DragRequestHandler = void (*)(void* context, int deltaX, int deltaY);
-    using DragStateRequestHandler = void (*)(void* context, bool active);
+    using ExitRequestHandler = OverlayExitRequestHandler;
+    using DragRequestHandler = OverlayDragRequestHandler;
+    using DragStateRequestHandler = OverlayDragStateRequestHandler;
 
     OverlayUI() = default;
 
@@ -33,17 +35,17 @@ public:
     void SetLayoutScale(float scale);
 
 private:
+    const OverlayRenderContext& GetRenderContext() const;
+    void InvalidateRenderContext();
+
     bool m_showDebugPanel = true;
     float m_layoutScale = 1.0f;
     float m_overlayOpacity = 0.86f;
     int m_layoutPresetIndex = 0;
     bool m_dragInteractionActive = false;
-    ExitRequestHandler m_exitRequestHandler = nullptr;
-    void* m_exitRequestContext = nullptr;
-    DragRequestHandler m_dragRequestHandler = nullptr;
-    void* m_dragRequestContext = nullptr;
-    DragStateRequestHandler m_dragStateRequestHandler = nullptr;
-    void* m_dragStateRequestContext = nullptr;
+    OverlayUIInteractionHandlers m_interactionHandlers{};
+    mutable bool m_renderContextDirty = true;
+    mutable OverlayRenderContext m_renderContextCache{};
 
     std::unordered_map<std::uint32_t, GlowEffect> m_keyGlowEffects;
 };

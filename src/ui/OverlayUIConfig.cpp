@@ -1,0 +1,57 @@
+#include "OverlayUIConfig.h"
+
+namespace keyviz
+{
+const OverlayUIConfig& GetOverlayUIConfig()
+{
+    static const OverlayUIConfig config = []() {
+        OverlayUIConfig value{};
+        value.overlayTitle = "KeyViz Overlay";
+        value.dragButtonLabel = "Drag to move";
+        value.exitButtonLabel = "Exit";
+        value.layoutPresetLabel = "Layout preset";
+        value.opacityLabel = "Opacity";
+        value.debugHintText = "Hold a tracked key to animate the glow.";
+        value.debugTodoText = "TODO: Expand to the full keyboard layout later.";
+        value.keyStatesLabel = "Key states";
+        value.futurePlanText = "TODO: Full keyboard layout and richer effect layers will be added later.";
+        value.sectionGap = 16.0f;
+        value.keyStatesSectionInset = 16.0f;
+        value.layoutComboWidth = 164.0f;
+        value.opacitySliderWidth = 150.0f;
+        value.minimumWindowWidth = 420.0f;
+        value.minimumWindowHeight = 240.0f;
+        return value;
+    }();
+    return config;
+}
+
+OverlayPanelMetricsConfig BuildOverlayPanelMetricsConfig(const OverlayUIConfig& config)
+{
+    OverlayPanelMetricsConfig metricsConfig{};
+    metricsConfig.title = config.overlayTitle;
+    metricsConfig.dragButtonLabel = config.dragButtonLabel;
+    metricsConfig.exitButtonLabel = config.exitButtonLabel;
+    metricsConfig.layoutLabel = config.layoutPresetLabel;
+    metricsConfig.opacityLabel = config.opacityLabel;
+    metricsConfig.debugHintText = config.debugHintText;
+    metricsConfig.footerText = config.futurePlanText;
+    metricsConfig.keyStatesSectionInset = config.keyStatesSectionInset;
+    metricsConfig.layoutComboWidth = config.layoutComboWidth;
+    metricsConfig.opacitySliderWidth = config.opacitySliderWidth;
+    metricsConfig.minimumWindowWidth = config.minimumWindowWidth;
+    metricsConfig.minimumWindowHeight = config.minimumWindowHeight;
+    metricsConfig.sectionGap = config.sectionGap;
+    return metricsConfig;
+}
+
+ImGuiWindowFlags GetOverlayWindowFlags()
+{
+    return ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoResize;
+}
+} // namespace keyviz
