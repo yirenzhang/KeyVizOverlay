@@ -372,7 +372,12 @@ void OverlayUI::Render(const InputService& inputService)
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(preferredSize, ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(m_overlayOpacity);
+
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float windowBorderSize = m_overlayOpacity <= 0.0f ? 0.0f : style.WindowBorderSize;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, windowBorderSize);
     ImGui::Begin(kOverlayTitle, nullptr, windowFlags);
+    ImGui::PopStyleVar();
     ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_overlayOpacity);
 
     ImGui::TextUnformatted(kOverlayTitle);
@@ -423,9 +428,8 @@ void OverlayUI::Render(const InputService& inputService)
     }
     ImGui::EndGroup();
 
-    ImGui::PopStyleVar();
-
     ImGui::SameLine();
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
     ImGui::BeginGroup();
     ImGui::TextUnformatted(kOpacityLabel);
     ImGui::SetNextItemWidth(kOpacitySliderWidth * metrics.scale);
@@ -435,10 +439,10 @@ void OverlayUI::Render(const InputService& inputService)
         m_overlayOpacity = static_cast<float>(opacityPercent) / 100.0f;
     }
     ImGui::EndGroup();
+    ImGui::PopStyleVar();
 
     ImGui::Spacing();
     ImGui::Separator();
-    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_overlayOpacity);
     DrawKeyboardVisualizer(inputService);
     if (m_showDebugPanel)
     {
@@ -473,8 +477,18 @@ void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
         clusterOrigin.y + clusterHeight + metrics.rowPaddingY);
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
-    drawList->AddRectFilled(clusterMin, clusterMax, ImGui::GetColorU32(ImVec4(0.08f, 0.09f, 0.11f, 0.58f)), 16.0f * metrics.scale);
-    drawList->AddRect(clusterMin, clusterMax, ImGui::GetColorU32(ImVec4(0.38f, 0.56f, 0.86f, 0.26f)), 16.0f * metrics.scale, 0, 1.0f * metrics.scale);
+    drawList->AddRectFilled(
+        clusterMin,
+        clusterMax,
+        ImGui::GetColorU32(ImVec4(0.08f, 0.09f, 0.11f, 0.58f)),
+        16.0f * metrics.scale);
+    drawList->AddRect(
+        clusterMin,
+        clusterMax,
+        ImGui::GetColorU32(ImVec4(0.38f, 0.56f, 0.86f, 0.26f)),
+        16.0f * metrics.scale,
+        0,
+        1.0f * metrics.scale);
 
     auto drawRow = [&](const KeyBinding* keys, std::size_t keyCount, float rowY, float rowWidth)
     {

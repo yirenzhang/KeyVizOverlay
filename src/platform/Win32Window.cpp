@@ -33,6 +33,7 @@ bool Win32Window::Create(HINSTANCE instance, int showCommand)
         return false;
     }
 
+    SetOpacity(kWindowOpacity);
     SetWindowPos(m_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     ShowWindow(m_hwnd, showCommand);
     UpdateWindow(m_hwnd);
@@ -156,7 +157,14 @@ void Win32Window::ResizeClientSize(int clientWidth, int clientHeight)
 
 void Win32Window::SetOpacity(BYTE opacity)
 {
-    (void)opacity;
+    m_opacity = opacity;
+
+    if (m_hwnd == nullptr)
+    {
+        return;
+    }
+
+    SetLayeredWindowAttributes(m_hwnd, 0, m_opacity, LWA_ALPHA);
 }
 
 

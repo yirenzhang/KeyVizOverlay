@@ -218,7 +218,7 @@ void Application::Tick()
     m_ui.Render(m_inputService);
     ImGui::Render();
 
-    const float clearColor[4] = { 0.10f, 0.10f, 0.12f, 0.0f };
+    const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     m_renderer.BeginFrame(clearColor);
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
     m_renderer.EndFrame();
