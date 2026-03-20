@@ -44,3 +44,6 @@ out/
 
 # Runtime/editor files
 imgui.ini
+
+# Temporary backup from flattening Dear ImGui into the main repo
+external/.imgui_git_backup/
