@@ -4,6 +4,14 @@
 #include <array>
 #include <cstddef>
 
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 namespace keyviz
 {
 namespace
@@ -134,7 +142,7 @@ float GetKeyAnimationValue(const InputService& inputService, const GlowEffect* g
     }
 
     const float glowValue = glow != nullptr ? glow->GetCurrentIntensity() : 0.0f;
-    return std::max(animationValue, glowValue);
+    return (std::max)(animationValue, glowValue);
 }
 
 float GetKeyWidth(const KeyBinding& binding, const LayoutMetrics& metrics)
@@ -172,7 +180,7 @@ float MeasureMaxRowWidth(const LayoutMetrics& metrics)
     const float topRowWidth = MeasureRowWidth(kTopRowKeys, kTopRowKeyCount, metrics);
     const float middleRowWidth = MeasureRowWidth(kMiddleRowKeys, kMiddleRowKeyCount, metrics);
     const float bottomRowWidth = MeasureRowWidth(kBottomRowKeys, kBottomRowKeyCount, metrics);
-    return std::max(topRowWidth, std::max(middleRowWidth, bottomRowWidth));
+    return (std::max)(topRowWidth, (std::max)(middleRowWidth, bottomRowWidth));
 }
 
 float MeasureClusterHeight(const LayoutMetrics& metrics)
@@ -200,8 +208,8 @@ float MeasureControlsRowWidth(const LayoutMetrics& metrics)
     const ImGuiStyle& style = ImGui::GetStyle();
     const float layoutLabelWidth = ImGui::CalcTextSize(kLayoutPresetLabel).x;
     const float opacityLabelWidth = ImGui::CalcTextSize(kOpacityLabel).x;
-    const float layoutGroupWidth = std::max(layoutLabelWidth, kLayoutComboWidth * metrics.scale);
-    const float opacityGroupWidth = std::max(opacityLabelWidth, kOpacitySliderWidth * metrics.scale);
+    const float layoutGroupWidth = (std::max)(layoutLabelWidth, kLayoutComboWidth * metrics.scale);
+    const float opacityGroupWidth = (std::max)(opacityLabelWidth, kOpacitySliderWidth * metrics.scale);
     return layoutGroupWidth + style.ItemSpacing.x + opacityGroupWidth;
 }
 
@@ -217,11 +225,11 @@ float MeasureContentWidth(const LayoutMetrics& metrics, bool showDebugPanel)
     const float clusterWidth = MeasureMaxRowWidth(metrics) + metrics.rowPaddingX * 2.0f + (kKeyStatesSectionInset * metrics.scale);
     const float footerWidth = ImGui::CalcTextSize(kFuturePlanText).x;
 
-    float contentWidth = std::max(headerWidth, std::max(controlsWidth, std::max(clusterWidth, footerWidth)));
+    float contentWidth = (std::max)(headerWidth, (std::max)(controlsWidth, (std::max)(clusterWidth, footerWidth)));
     if (showDebugPanel)
     {
         const float debugWidth = ImGui::CalcTextSize(kDebugHintText).x;
-        contentWidth = std::max(contentWidth, debugWidth);
+        contentWidth = (std::max)(contentWidth, debugWidth);
     }
 
     return contentWidth;
@@ -231,7 +239,7 @@ ImVec2 ComputePreferredWindowSize(const LayoutMetrics& metrics, bool showDebugPa
 {
     const ImGuiStyle& style = ImGui::GetStyle();
     const float contentWidth = MeasureContentWidth(metrics, showDebugPanel);
-    const float headerRowHeight = std::max(metrics.dragBarHeight, ImGui::GetTextLineHeight());
+    const float headerRowHeight = (std::max)(metrics.dragBarHeight, ImGui::GetTextLineHeight());
     const float controlsRowHeight = MeasureControlsRowHeight(metrics);
     const float clusterHeight = MeasureClusterHeight(metrics);
     const float keyboardFooterHeight = ImGui::GetTextLineHeightWithSpacing();
@@ -253,8 +261,8 @@ ImVec2 ComputePreferredWindowSize(const LayoutMetrics& metrics, bool showDebugPa
         debugHeight +
         24.0f * metrics.scale;
 
-    windowWidth = std::max(windowWidth, kMinimumWindowWidth);
-    windowHeight = std::max(windowHeight, kMinimumWindowHeight);
+    windowWidth = (std::max)(windowWidth, kMinimumWindowWidth);
+    windowHeight = (std::max)(windowHeight, kMinimumWindowHeight);
     return ImVec2(windowWidth, windowHeight);
 }
 
@@ -455,7 +463,7 @@ void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
     const float topRowWidth = MeasureRowWidth(kTopRowKeys, kTopRowKeyCount, metrics);
     const float middleRowWidth = MeasureRowWidth(kMiddleRowKeys, kMiddleRowKeyCount, metrics);
     const float bottomRowWidth = MeasureRowWidth(kBottomRowKeys, kBottomRowKeyCount, metrics);
-    const float clusterWidthMax = std::max(topRowWidth, std::max(middleRowWidth, bottomRowWidth));
+    const float clusterWidthMax = (std::max)(topRowWidth, (std::max)(middleRowWidth, bottomRowWidth));
     const float clusterHeight = (GetKeyVisualHeight(metrics) * 3.0f) + (metrics.rowSpacing * 2.0f);
 
     const ImVec2 clusterOrigin = ImGui::GetCursorScreenPos();
