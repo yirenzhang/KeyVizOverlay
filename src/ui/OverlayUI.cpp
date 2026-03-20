@@ -43,23 +43,46 @@ struct LayoutMetrics
 
 constexpr KeyBinding kTopRowKeys[] =
 {
-    { "ESC", VK_ESCAPE, 0.82f },
+    { "Tab", VK_TAB, 1.10f },
+    { "Q", 'Q', 1.00f },
     { "W", 'W', 1.00f },
+    { "E", 'E', 1.00f },
+    { "R", 'R', 1.00f },
 };
 
 constexpr KeyBinding kMiddleRowKeys[] =
 {
+    { "Shift", VK_SHIFT, 1.35f },
     { "A", 'A', 1.00f },
     { "S", 'S', 1.00f },
     { "D", 'D', 1.00f },
+    { "F", 'F', 1.00f },
 };
 
 constexpr KeyBinding kBottomRowKeys[] =
 {
-    { "Shift", VK_SHIFT, 1.15f },
-    { "Space", VK_SPACE, 2.60f },
-    { "Ctrl", VK_CONTROL, 1.05f },
-    { "Alt", VK_MENU, 1.05f },
+    { "Ctrl", VK_CONTROL, 1.25f },
+    { "Space", VK_SPACE, 3.20f },
+    { "Alt", VK_MENU, 1.20f },
+};
+
+constexpr KeyBinding kActionRowKeys[] =
+{
+    { "Z", 'Z', 1.00f },
+    { "X", 'X', 1.00f },
+    { "C", 'C', 1.00f },
+    { "V", 'V', 1.00f },
+    { "T", 'T', 1.00f },
+    { "G", 'G', 1.00f },
+};
+
+constexpr KeyBinding kNumberRowKeys[] =
+{
+    { "1", '1', 1.00f },
+    { "2", '2', 1.00f },
+    { "3", '3', 1.00f },
+    { "4", '4', 1.00f },
+    { "5", '5', 1.00f },
 };
 
 constexpr const char* kLayoutPresetLabels[] =
@@ -72,13 +95,17 @@ constexpr const char* kLayoutPresetLabels[] =
 constexpr std::size_t kTopRowKeyCount = sizeof(kTopRowKeys) / sizeof(kTopRowKeys[0]);
 constexpr std::size_t kMiddleRowKeyCount = sizeof(kMiddleRowKeys) / sizeof(kMiddleRowKeys[0]);
 constexpr std::size_t kBottomRowKeyCount = sizeof(kBottomRowKeys) / sizeof(kBottomRowKeys[0]);
+constexpr std::size_t kActionRowKeyCount = sizeof(kActionRowKeys) / sizeof(kActionRowKeys[0]);
+constexpr std::size_t kNumberRowKeyCount = sizeof(kNumberRowKeys) / sizeof(kNumberRowKeys[0]);
 constexpr std::size_t kLayoutPresetCount = sizeof(kLayoutPresetLabels) / sizeof(kLayoutPresetLabels[0]);
 
-constexpr std::array<KeyRow, 3> kTrackedRows =
+constexpr std::array<KeyRow, 5> kTrackedRows =
 {
     KeyRow{ kTopRowKeys, kTopRowKeyCount },
     KeyRow{ kMiddleRowKeys, kMiddleRowKeyCount },
     KeyRow{ kBottomRowKeys, kBottomRowKeyCount },
+    KeyRow{ kActionRowKeys, kActionRowKeyCount },
+    KeyRow{ kNumberRowKeys, kNumberRowKeyCount },
 };
 
 constexpr const char* kOverlayTitle = "KeyViz Overlay";
@@ -177,15 +204,23 @@ float MeasureRowWidth(const KeyBinding* keys, std::size_t keyCount, const Layout
 
 float MeasureMaxRowWidth(const LayoutMetrics& metrics)
 {
-    const float topRowWidth = MeasureRowWidth(kTopRowKeys, kTopRowKeyCount, metrics);
-    const float middleRowWidth = MeasureRowWidth(kMiddleRowKeys, kMiddleRowKeyCount, metrics);
-    const float bottomRowWidth = MeasureRowWidth(kBottomRowKeys, kBottomRowKeyCount, metrics);
-    return (std::max)(topRowWidth, (std::max)(middleRowWidth, bottomRowWidth));
+    float maxWidth = 0.0f;
+    for (const KeyRow& row : kTrackedRows)
+    {
+        maxWidth = (std::max)(maxWidth, MeasureRowWidth(row.keys, row.keyCount, metrics));
+    }
+    return maxWidth;
 }
 
-float MeasureClusterHeight(const LayoutMetrics& metrics)
+float MeasureClusterContentHeight(const LayoutMetrics& metrics)
 {
-    return (GetKeyVisualHeight(metrics) * 3.0f) + (metrics.rowSpacing * 2.0f) + (metrics.rowPaddingY * 2.0f);
+    const float rowCount = static_cast<float>(kTrackedRows.size());
+    return (GetKeyVisualHeight(metrics) * rowCount) + (metrics.rowSpacing * (rowCount - 1.0f));
+}
+
+float MeasureClusterBackgroundHeight(const LayoutMetrics& metrics)
+{
+    return MeasureClusterContentHeight(metrics) + (metrics.rowPaddingY * 2.0f);
 }
 
 float MeasureButtonWidth(const char* label, const LayoutMetrics& metrics)
@@ -241,7 +276,7 @@ ImVec2 ComputePreferredWindowSize(const LayoutMetrics& metrics, bool showDebugPa
     const float contentWidth = MeasureContentWidth(metrics, showDebugPanel);
     const float headerRowHeight = (std::max)(metrics.dragBarHeight, ImGui::GetTextLineHeight());
     const float controlsRowHeight = MeasureControlsRowHeight(metrics);
-    const float clusterHeight = MeasureClusterHeight(metrics);
+    const float clusterHeight = MeasureClusterBackgroundHeight(metrics);
     const float keyboardFooterHeight = ImGui::GetTextLineHeightWithSpacing();
     const float debugHeight = showDebugPanel ? (ImGui::GetTextLineHeightWithSpacing() * 2.0f) : 0.0f;
 
@@ -464,17 +499,21 @@ void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
     ImGui::TextUnformatted(kKeyStatesLabel);
     ImGui::Dummy(ImVec2(0.0f, kSectionGap * metrics.scale));
 
-    const float topRowWidth = MeasureRowWidth(kTopRowKeys, kTopRowKeyCount, metrics);
-    const float middleRowWidth = MeasureRowWidth(kMiddleRowKeys, kMiddleRowKeyCount, metrics);
-    const float bottomRowWidth = MeasureRowWidth(kBottomRowKeys, kBottomRowKeyCount, metrics);
-    const float clusterWidthMax = (std::max)(topRowWidth, (std::max)(middleRowWidth, bottomRowWidth));
-    const float clusterHeight = (GetKeyVisualHeight(metrics) * 3.0f) + (metrics.rowSpacing * 2.0f);
+    std::array<float, kTrackedRows.size()> rowWidths{};
+    float clusterWidthMax = 0.0f;
+    for (std::size_t rowIndex = 0; rowIndex < kTrackedRows.size(); ++rowIndex)
+    {
+        rowWidths[rowIndex] = MeasureRowWidth(kTrackedRows[rowIndex].keys, kTrackedRows[rowIndex].keyCount, metrics);
+        clusterWidthMax = (std::max)(clusterWidthMax, rowWidths[rowIndex]);
+    }
+
+    const float clusterContentHeight = MeasureClusterContentHeight(metrics);
 
     const ImVec2 clusterOrigin = ImGui::GetCursorScreenPos();
     const ImVec2 clusterMin = ImVec2(clusterOrigin.x - metrics.rowPaddingX, clusterOrigin.y - metrics.rowPaddingY);
     const ImVec2 clusterMax = ImVec2(
         clusterOrigin.x + clusterWidthMax + metrics.rowPaddingX,
-        clusterOrigin.y + clusterHeight + metrics.rowPaddingY);
+        clusterOrigin.y + clusterContentHeight + metrics.rowPaddingY);
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     drawList->AddRectFilled(
@@ -518,11 +557,17 @@ void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
         }
     };
 
-    drawRow(kTopRowKeys, kTopRowKeyCount, 0.0f, topRowWidth);
-    drawRow(kMiddleRowKeys, kMiddleRowKeyCount, metrics.keyHeight + metrics.rowSpacing, middleRowWidth);
-    drawRow(kBottomRowKeys, kBottomRowKeyCount, (metrics.keyHeight + metrics.rowSpacing) * 2.0f, bottomRowWidth);
+    const float rowStepY = GetKeyVisualHeight(metrics) + metrics.rowSpacing;
+    for (std::size_t rowIndex = 0; rowIndex < kTrackedRows.size(); ++rowIndex)
+    {
+        drawRow(
+            kTrackedRows[rowIndex].keys,
+            kTrackedRows[rowIndex].keyCount,
+            static_cast<float>(rowIndex) * rowStepY,
+            rowWidths[rowIndex]);
+    }
 
-    ImGui::Dummy(ImVec2(clusterWidthMax, clusterHeight));
+    ImGui::Dummy(ImVec2(clusterWidthMax, clusterContentHeight));
     ImGui::Spacing();
     ImGui::TextDisabled(kFuturePlanText);
     ImGui::Unindent(sectionInset);
