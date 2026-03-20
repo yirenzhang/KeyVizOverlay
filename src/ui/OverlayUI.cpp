@@ -347,8 +347,6 @@ void OverlayUI::Render(const InputService& inputService)
     const LayoutMetrics metrics = BuildLayoutMetrics(m_layoutScale);
     const ImVec2 preferredSize = ComputePreferredWindowSize(metrics, m_showDebugPanel);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_overlayOpacity);
-
     const ImGuiWindowFlags windowFlags =
         ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_NoMove |
@@ -359,7 +357,9 @@ void OverlayUI::Render(const InputService& inputService)
 
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(preferredSize, ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(m_overlayOpacity);
     ImGui::Begin("KeyViz Overlay", nullptr, windowFlags);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_overlayOpacity);
 
     ImGui::TextUnformatted("KeyViz Overlay");
     ImGui::SameLine();
@@ -409,6 +409,8 @@ void OverlayUI::Render(const InputService& inputService)
     }
     ImGui::EndGroup();
 
+    ImGui::PopStyleVar();
+
     ImGui::SameLine();
     ImGui::BeginGroup();
     ImGui::TextUnformatted("Opacity");
@@ -422,6 +424,7 @@ void OverlayUI::Render(const InputService& inputService)
 
     ImGui::Spacing();
     ImGui::Separator();
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_overlayOpacity);
     DrawKeyboardVisualizer(inputService);
     if (m_showDebugPanel)
     {
@@ -430,8 +433,9 @@ void OverlayUI::Render(const InputService& inputService)
         ImGui::TextDisabled("TODO: Expand to the full keyboard layout later.");
     }
 
-    ImGui::End();
     ImGui::PopStyleVar();
+
+    ImGui::End();
 }
 
 void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
@@ -476,7 +480,9 @@ void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
 
             const float animationValue = GetKeyAnimationValue(inputService, glow, binding.keyCode);
             const bool wasPressed = inputService.WasPressedThisFrame(binding.keyCode);
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
             DrawKeyCap(binding.label, animationValue, wasPressed, GetKeyVisualWidth(binding, metrics), metrics);
+            ImGui::PopStyleVar();
 
             if (i + 1U < keyCount)
             {
