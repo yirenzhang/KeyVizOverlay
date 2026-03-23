@@ -67,7 +67,6 @@ constexpr KeyBinding kNumberRowKeys[] =
 
 constexpr const char* kLayoutPresetLabels[] =
 {
-    "Compact",
     "Keyboard Only",
     "Keyboard + Mouse",
     "WASD Core",
@@ -120,13 +119,13 @@ const char* const* GetLayoutPresetLabels()
 
 KeyRowSet GetRowsForPreset(int presetIndex)
 {
-    // 2 号预设显示键盘加鼠标，其余预设保持既有布局。
-    if (presetIndex == 2)
+    // 1 号预设显示键盘加鼠标，其余预设保持既有布局。
+    if (presetIndex == 1)
     {
         return KeyRowSet{ kExtendedMouseRows.data(), kExtendedMouseRows.size() };
     }
 
-    if (presetIndex == 3)
+    if (presetIndex == 2)
     {
         return KeyRowSet{ kWASDCoreRows.data(), kWASDCoreRows.size() };
     }
@@ -141,17 +140,13 @@ void ApplyLayoutPresetDefaults(int presetIndex, bool& showDebugPanel, float& lay
     {
     case 0:
         showDebugPanel = false;
-        layoutScale = 0.85f;
-        break;
-    case 1:
-        showDebugPanel = false;
         layoutScale = 1.0f;
         break;
-    case 2:
+    case 1:
         showDebugPanel = true;
         layoutScale = 1.0f;
         break;
-    case 3:
+    case 2:
         showDebugPanel = false;
         layoutScale = 1.0f;
         break;

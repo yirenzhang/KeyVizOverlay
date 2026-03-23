@@ -1,6 +1,7 @@
 #include "OverlayUIInteraction.h"
 
 #include "KeyboardLayoutPresets.h"
+#include "OverlayUILayout.h"
 
 namespace keyviz
 {
@@ -26,6 +27,10 @@ void ApplyOverlayPanelResult(
     {
         layoutPresetIndex = panelResult.layoutPresetIndex;
         ApplyLayoutPresetDefaults(layoutPresetIndex, showDebugPanel, layoutScale);
+    }
+    if (panelResult.layoutScaleChanged)
+    {
+        layoutScale = ClampLayoutScale(panelResult.layoutScale);
     }
     if (panelResult.overlayOpacityChanged)
     {

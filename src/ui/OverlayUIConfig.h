@@ -12,6 +12,7 @@ struct OverlayUIConfig
     const char* exitButtonLabel = nullptr;
     const char* layoutPresetLabel = nullptr;
     const char* opacityLabel = nullptr;
+    const char* keySizeLabel = nullptr;
     const char* debugHintText = nullptr;
     const char* debugTodoText = nullptr;
     const char* keyStatesLabel = nullptr;
@@ -21,6 +22,7 @@ struct OverlayUIConfig
     float keyStatesSectionInset = 0.0f;
     float layoutComboWidth = 0.0f;
     float opacitySliderWidth = 0.0f;
+    float keySizeSliderWidth = 0.0f;
     float minimumWindowWidth = 0.0f;
     float minimumWindowHeight = 0.0f;
 };

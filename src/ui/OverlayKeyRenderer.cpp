@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "imgui.h"
+#include <windows.h>
 
 #ifdef max
 #undef max
@@ -37,6 +38,107 @@ float GetKeyAnimationValue(const InputService& inputService, const GlowEffect* g
 
     const float glowValue = glow != nullptr ? glow->GetCurrentIntensity() : 0.0f;
     return (std::max)(animationValue, glowValue);
+}
+
+const GlowEffect* FindGlowEffect(const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects, std::uint32_t keyCode)
+{
+    const auto glowIt = keyGlowEffects.find(keyCode);
+    if (glowIt == keyGlowEffects.end())
+    {
+        return nullptr;
+    }
+
+    return &glowIt->second;
+}
+
+bool IsMouseVisualRow(const KeyBinding* keys, std::size_t keyCount)
+{
+    return keyCount == 3 &&
+        keys[0].keyCode == VK_LBUTTON &&
+        keys[1].keyCode == VK_RBUTTON &&
+        keys[2].keyCode == VK_MBUTTON;
+}
+
+void DrawMouseShape(
+    const InputService& inputService,
+    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
+    const KeyBinding* keys,
+    float rowWidth,
+    const LayoutMetrics& metrics)
+{
+    const float rowHeight = GetKeyVisualHeight(metrics);
+    const ImVec2 mouseSize(rowWidth, rowHeight);
+    const ImVec2 mousePos = ImGui::GetCursorScreenPos();
+    const ImVec2 mouseMin = mousePos;
+    const ImVec2 mouseMax(mousePos.x + mouseSize.x, mousePos.y + mouseSize.y);
+    const float cornerRounding = rowHeight * 0.45f;
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    // 鼠标默认内部保持透明，仅在按键动效阶段叠加区域填充。
+    drawList->AddRect(
+        mouseMin,
+        mouseMax,
+        ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.92f)),
+        cornerRounding,
+        0,
+        1.0f * metrics.scale);
+
+    const float middleWidth = mouseSize.x * 0.24f;
+    const float sideWidth = (mouseSize.x - middleWidth) * 0.5f;
+    const float buttonHeight = mouseSize.y * 0.58f;
+
+    const ImVec2 leftMin = mouseMin;
+    const ImVec2 leftMax(mouseMin.x + sideWidth, mouseMin.y + buttonHeight);
+    const ImVec2 rightMin(mouseMin.x + sideWidth + middleWidth, mouseMin.y);
+    const ImVec2 rightMax(mouseMax.x, mouseMin.y + buttonHeight);
+    const ImVec2 middleMin(mouseMin.x + sideWidth, mouseMin.y);
+    const ImVec2 middleMax(mouseMin.x + sideWidth + middleWidth, mouseMin.y + buttonHeight);
+
+    const std::uint32_t leftKey = keys[0].keyCode;
+    const std::uint32_t rightKey = keys[1].keyCode;
+    const std::uint32_t middleKey = keys[2].keyCode;
+
+    auto drawButtonRegion = [&](const ImVec2& regionMin, const ImVec2& regionMax, std::uint32_t keyCode) {
+        const GlowEffect* glow = FindGlowEffect(keyGlowEffects, keyCode);
+        const float animationValue = GetKeyAnimationValue(inputService, glow, keyCode);
+        const bool wasPressed = inputService.WasPressedThisFrame(keyCode);
+        ImVec4 fillColor = LerpColor(ImVec4(0.0f, 0.0f, 0.0f, 0.0f), ImVec4(0.00f, 0.78f, 1.00f, 0.58f), animationValue);
+        if (wasPressed)
+        {
+            fillColor = LerpColor(fillColor, ImVec4(0.96f, 0.74f, 0.24f, 1.0f), 0.45f);
+        }
+
+        drawList->AddRectFilled(regionMin, regionMax, ImGui::GetColorU32(fillColor), 6.0f * metrics.scale);
+    };
+
+    drawButtonRegion(leftMin, leftMax, leftKey);
+    drawButtonRegion(rightMin, rightMax, rightKey);
+    drawButtonRegion(middleMin, middleMax, middleKey);
+
+    drawList->AddLine(
+        ImVec2(mouseMin.x + sideWidth, mouseMin.y),
+        ImVec2(mouseMin.x + sideWidth, mouseMin.y + buttonHeight),
+        ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.55f)),
+        1.0f * metrics.scale);
+    drawList->AddLine(
+        ImVec2(mouseMin.x + sideWidth + middleWidth, mouseMin.y),
+        ImVec2(mouseMin.x + sideWidth + middleWidth, mouseMin.y + buttonHeight),
+        ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.55f)),
+        1.0f * metrics.scale);
+    drawList->AddLine(
+        ImVec2(mouseMin.x, mouseMin.y + buttonHeight),
+        ImVec2(mouseMax.x, mouseMin.y + buttonHeight),
+        ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.42f)),
+        1.0f * metrics.scale);
+
+    const float wheelCenterX = mouseMin.x + sideWidth + middleWidth * 0.5f;
+    drawList->AddLine(
+        ImVec2(wheelCenterX, mouseMin.y + buttonHeight * 0.22f),
+        ImVec2(wheelCenterX, mouseMin.y + buttonHeight * 0.78f),
+        ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.85f)),
+        2.0f * metrics.scale);
+
+    ImGui::Dummy(mouseSize);
 }
 
 void DrawKeyCap(const char* label, float animationValue, bool wasPressed, float keyWidth, const LayoutMetrics& metrics)
@@ -121,15 +223,19 @@ void DrawKeyboardCluster(
         const float rowStartX = clusterOrigin.x + (clusterWidthMax - rowWidth) * 0.5f;
         ImGui::SetCursorScreenPos(ImVec2(rowStartX, clusterOrigin.y + rowY));
 
+        if (IsMouseVisualRow(keys, keyCount))
+        {
+            // 鼠标造型保持完全可见，不受窗口不透明度滑条影响。
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
+            DrawMouseShape(inputService, keyGlowEffects, keys, rowWidth, metrics);
+            ImGui::PopStyleVar();
+            return;
+        }
+
         for (std::size_t i = 0; i < keyCount; ++i)
         {
             const KeyBinding& binding = keys[i];
-            const GlowEffect* glow = nullptr;
-            const auto glowIt = keyGlowEffects.find(binding.keyCode);
-            if (glowIt != keyGlowEffects.end())
-            {
-                glow = &glowIt->second;
-            }
+            const GlowEffect* glow = FindGlowEffect(keyGlowEffects, binding.keyCode);
 
             const float animationValue = GetKeyAnimationValue(inputService, glow, binding.keyCode);
             const bool wasPressed = inputService.WasPressedThisFrame(binding.keyCode);

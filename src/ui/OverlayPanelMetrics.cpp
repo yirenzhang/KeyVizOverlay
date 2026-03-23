@@ -17,17 +17,20 @@ float MeasureHeaderRowWidth(const LayoutMetrics& metrics, const OverlayPanelMetr
 
 float MeasureControlsRowWidth(const LayoutMetrics& metrics, const OverlayPanelMetricsConfig& config)
 {
-    const ImGuiStyle& style = ImGui::GetStyle();
     const float layoutLabelWidth = ImGui::CalcTextSize(config.layoutLabel).x;
     const float opacityLabelWidth = ImGui::CalcTextSize(config.opacityLabel).x;
+    const float keySizeLabelWidth = ImGui::CalcTextSize(config.keySizeLabel).x;
     const float layoutGroupWidth = (std::max)(layoutLabelWidth, config.layoutComboWidth * metrics.scale);
     const float opacityGroupWidth = (std::max)(opacityLabelWidth, config.opacitySliderWidth * metrics.scale);
-    return layoutGroupWidth + style.ItemSpacing.x + opacityGroupWidth;
+    const float keySizeGroupWidth = (std::max)(keySizeLabelWidth, config.keySizeSliderWidth * metrics.scale);
+    return (std::max)(layoutGroupWidth + ImGui::GetStyle().ItemSpacing.x + opacityGroupWidth, keySizeGroupWidth);
 }
 
 float MeasureControlsRowHeight(const LayoutMetrics&)
 {
-    return ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeight();
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float groupHeight = ImGui::GetTextLineHeight() + style.ItemSpacing.y + ImGui::GetFrameHeight();
+    return groupHeight + style.ItemSpacing.y + groupHeight;
 }
 
 }

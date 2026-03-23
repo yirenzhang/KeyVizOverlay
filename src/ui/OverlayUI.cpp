@@ -83,13 +83,13 @@ bool OverlayUI::IsConsoleHidden() const
 void OverlayUI::Render(const InputService& inputService)
 {
     const OverlayUIConfig& uiConfig = GetOverlayUIConfig();
-    const OverlayRenderContext& context = GetRenderContext();
+    const OverlayRenderContext* context = &GetRenderContext();
     if (!m_consoleHidden)
     {
         OverlayWindowConfig consoleWindowConfig{};
         consoleWindowConfig.title = kConsoleWindowTitle;
-        consoleWindowConfig.position = context.consoleWindowPos;
-        consoleWindowConfig.preferredSize = context.windowSizes.consoleSize;
+        consoleWindowConfig.position = context->consoleWindowPos;
+        consoleWindowConfig.preferredSize = context->windowSizes.consoleSize;
         consoleWindowConfig.overlayOpacity = 1.0f;
         consoleWindowConfig.windowFlags = GetOverlayWindowFlags();
         OverlayWindowScope consoleWindowScope(consoleWindowConfig);
@@ -99,9 +99,10 @@ void OverlayUI::Render(const InputService& inputService)
         }
 
         const OverlayPanelRenderResult panelResult = RenderOverlayConsole(
-            context.panelConfig,
-            context.metrics,
+            context->panelConfig,
+            context->metrics,
             m_overlayOpacity,
+            m_layoutScale,
             m_layoutPresetIndex,
             m_dragInteractionActive,
             GetLayoutPresetLabels(),
@@ -114,17 +115,18 @@ void OverlayUI::Render(const InputService& inputService)
             m_showDebugPanel,
             m_layoutScale,
             m_overlayOpacity);
-        if (panelResult.layoutPresetChanged)
+        if (panelResult.layoutPresetChanged || panelResult.layoutScaleChanged)
         {
             InvalidateRenderContext();
-            return;
+            // 关键参数变化后在同一帧刷新上下文，避免后续窗口尺寸和内容不同步。
+            context = &GetRenderContext();
         }
     }
 
     OverlayWindowConfig keyStatesWindowConfig{};
     keyStatesWindowConfig.title = kKeyStatesWindowTitle;
-    keyStatesWindowConfig.position = context.keyStatesWindowPos;
-    keyStatesWindowConfig.preferredSize = context.windowSizes.keyStatesSize;
+    keyStatesWindowConfig.position = context->keyStatesWindowPos;
+    keyStatesWindowConfig.preferredSize = context->windowSizes.keyStatesSize;
     keyStatesWindowConfig.overlayOpacity = m_overlayOpacity;
     keyStatesWindowConfig.windowFlags = GetOverlayWindowFlags();
     OverlayWindowScope keyStatesWindowScope(keyStatesWindowConfig);
@@ -136,8 +138,8 @@ void OverlayUI::Render(const InputService& inputService)
     RenderOverlayKeyStates(
         inputService,
         uiConfig,
-        context.metrics,
-        context.rowSet,
+        context->metrics,
+        context->rowSet,
         m_keyGlowEffects,
         m_showDebugPanel);
 }
@@ -210,6 +212,37 @@ void OverlayUI::InvalidateRenderContext()
 
 void OverlayUI::UpdateConsoleCommandState(const InputService& inputService)
 {
+    bool hasLetterPressedThisFrame = false;
+    bool hasNonCommandLetterPressedThisFrame = false;
+    for (std::uint32_t keyCode = 'A'; keyCode <= 'Z'; ++keyCode)
+    {
+        if (!inputService.WasPressedThisFrame(keyCode))
+        {
+            continue;
+        }
+
+        hasLetterPressedThisFrame = true;
+        const char letter = static_cast<char>(keyCode + ('a' - 'A'));
+        const bool isCommandLetter = letter == 'h' || letter == 'i' || letter == 'd' ||
+            letter == 'e' || letter == 's' || letter == 'o' || letter == 'w';
+        if (!isCommandLetter)
+        {
+            hasNonCommandLetterPressedThisFrame = true;
+            break;
+        }
+    }
+
+    if (hasNonCommandLetterPressedThisFrame)
+    {
+        m_consoleCommandBuffer.clear();
+        return;
+    }
+
+    if (!hasLetterPressedThisFrame)
+    {
+        return;
+    }
+
     AppendCommandLetter(inputService, 'H', 'h', m_consoleCommandBuffer);
     AppendCommandLetter(inputService, 'I', 'i', m_consoleCommandBuffer);
     AppendCommandLetter(inputService, 'D', 'd', m_consoleCommandBuffer);
