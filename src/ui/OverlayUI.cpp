@@ -46,6 +46,11 @@ void AppendCommandLetter(const InputService& inputService, std::uint32_t keyCode
 void OverlayUI::Initialize()
 {
     m_keyGlowEffects.clear();
+    // 历史配置中可能残留已移除预设索引，这里统一回落到默认预设。
+    if (m_layoutPresetIndex < 0 || m_layoutPresetIndex >= GetLayoutPresetCount())
+    {
+        m_layoutPresetIndex = 0;
+    }
     m_consoleHidden = false;
     m_consoleCommandBuffer.clear();
     m_dragInteractionActive = false;
