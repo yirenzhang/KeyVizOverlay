@@ -22,21 +22,16 @@ void DrawOverlayKeyboardVisualizer(
         uiConfig.futurePlanText);
 }
 
-OverlayPanelRenderResult RenderOverlayContent(
-    const InputService& inputService,
-    const OverlayUIConfig& uiConfig,
+OverlayPanelRenderResult RenderOverlayConsole(
     const OverlayPanelMetricsConfig& panelConfig,
     const LayoutMetrics& metrics,
-    KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
     float overlayOpacity,
     int layoutPresetIndex,
     bool dragInteractionActive,
-    bool showDebugPanel,
     const char* const* layoutPresetLabels,
     int layoutPresetCount)
 {
-    const OverlayPanelRenderResult panelResult = RenderOverlayPanelControls(
+    return RenderOverlayPanelControls(
         panelConfig,
         metrics,
         overlayOpacity,
@@ -44,9 +39,17 @@ OverlayPanelRenderResult RenderOverlayContent(
         layoutPresetLabels,
         layoutPresetCount,
         dragInteractionActive);
+}
 
+void RenderOverlayKeyStates(
+    const InputService& inputService,
+    const OverlayUIConfig& uiConfig,
+    const LayoutMetrics& metrics,
+    KeyRowSet rowSet,
+    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
+    bool showDebugPanel)
+{
     ImGui::Spacing();
-    ImGui::Separator();
     DrawOverlayKeyboardVisualizer(inputService, uiConfig, metrics, rowSet, keyGlowEffects);
     if (showDebugPanel)
     {
@@ -54,7 +57,5 @@ OverlayPanelRenderResult RenderOverlayContent(
         ImGui::TextUnformatted(uiConfig.debugHintText);
         ImGui::TextDisabled(uiConfig.debugTodoText);
     }
-
-    return panelResult;
 }
 } // namespace keyviz

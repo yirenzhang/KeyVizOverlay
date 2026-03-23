@@ -7,6 +7,7 @@ namespace keyviz
 struct OverlayWindowConfig
 {
     const char* title = nullptr;
+    ImVec2 position{};
     ImVec2 preferredSize{};
     float overlayOpacity = 1.0f;
     ImGuiWindowFlags windowFlags = 0;

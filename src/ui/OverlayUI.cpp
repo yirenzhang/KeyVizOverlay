@@ -9,10 +9,45 @@
 
 namespace keyviz
 {
+namespace
+{
+constexpr std::size_t kCommandBufferLimit = 24U;
+constexpr const char* kHideCommand = "hidehide";
+constexpr const char* kShowCommand = "showshow";
+constexpr const char* kConsoleWindowTitle = "KeyViz Console";
+constexpr const char* kKeyStatesWindowTitle = "Key states";
+
+bool EndsWithCommand(const std::string& text, const char* suffix)
+{
+    const std::size_t suffixLength = std::char_traits<char>::length(suffix);
+    if (text.size() < suffixLength)
+    {
+        return false;
+    }
+
+    return text.compare(text.size() - suffixLength, suffixLength, suffix) == 0;
+}
+
+void AppendCommandLetter(const InputService& inputService, std::uint32_t keyCode, char letter, std::string& commandBuffer)
+{
+    if (!inputService.WasPressedThisFrame(keyCode))
+    {
+        return;
+    }
+
+    commandBuffer.push_back(letter);
+    if (commandBuffer.size() > kCommandBufferLimit)
+    {
+        commandBuffer.erase(0, commandBuffer.size() - kCommandBufferLimit);
+    }
+}
+}
 
 void OverlayUI::Initialize()
 {
     m_keyGlowEffects.clear();
+    m_consoleHidden = false;
+    m_consoleCommandBuffer.clear();
     m_dragInteractionActive = false;
     InvalidateRenderContext();
 }
@@ -20,12 +55,14 @@ void OverlayUI::Initialize()
 void OverlayUI::Shutdown()
 {
     m_keyGlowEffects.clear();
+    m_consoleCommandBuffer.clear();
 }
 
 void OverlayUI::Update(float deltaSeconds, const InputService& inputService)
 {
     const KeyRowSet rowSet = GetRowsForPreset(m_layoutPresetIndex);
     UpdateKeyGlowStates(deltaSeconds, inputService, rowSet, m_keyGlowEffects);
+    UpdateConsoleCommandState(inputService);
 }
 
 ImVec2 OverlayUI::GetPreferredWindowSize() const
@@ -42,42 +79,62 @@ void OverlayUI::Render(const InputService& inputService)
 {
     const OverlayUIConfig& uiConfig = GetOverlayUIConfig();
     const OverlayRenderContext& context = GetRenderContext();
-    OverlayWindowConfig windowConfig{};
-    windowConfig.title = uiConfig.overlayTitle;
-    windowConfig.preferredSize = context.preferredSize;
-    windowConfig.overlayOpacity = m_overlayOpacity;
-    windowConfig.windowFlags = GetOverlayWindowFlags();
-    OverlayWindowScope windowScope(windowConfig);
-    if (!windowScope.IsContentVisible())
+    if (!m_consoleHidden)
+    {
+        OverlayWindowConfig consoleWindowConfig{};
+        consoleWindowConfig.title = kConsoleWindowTitle;
+        consoleWindowConfig.position = context.consoleWindowPos;
+        consoleWindowConfig.preferredSize = context.windowSizes.consoleSize;
+        consoleWindowConfig.overlayOpacity = 1.0f;
+        consoleWindowConfig.windowFlags = GetOverlayWindowFlags();
+        OverlayWindowScope consoleWindowScope(consoleWindowConfig);
+        if (!consoleWindowScope.IsContentVisible())
+        {
+            return;
+        }
+
+        const OverlayPanelRenderResult panelResult = RenderOverlayConsole(
+            context.panelConfig,
+            context.metrics,
+            m_overlayOpacity,
+            m_layoutPresetIndex,
+            m_dragInteractionActive,
+            GetLayoutPresetLabels(),
+            GetLayoutPresetCount());
+        ApplyOverlayPanelResult(
+            panelResult,
+            m_interactionHandlers,
+            m_dragInteractionActive,
+            m_layoutPresetIndex,
+            m_showDebugPanel,
+            m_layoutScale,
+            m_overlayOpacity);
+        if (panelResult.layoutPresetChanged)
+        {
+            InvalidateRenderContext();
+            return;
+        }
+    }
+
+    OverlayWindowConfig keyStatesWindowConfig{};
+    keyStatesWindowConfig.title = kKeyStatesWindowTitle;
+    keyStatesWindowConfig.position = context.keyStatesWindowPos;
+    keyStatesWindowConfig.preferredSize = context.windowSizes.keyStatesSize;
+    keyStatesWindowConfig.overlayOpacity = m_overlayOpacity;
+    keyStatesWindowConfig.windowFlags = GetOverlayWindowFlags();
+    OverlayWindowScope keyStatesWindowScope(keyStatesWindowConfig);
+    if (!keyStatesWindowScope.IsContentVisible())
     {
         return;
     }
 
-    const OverlayPanelRenderResult panelResult = RenderOverlayContent(
+    RenderOverlayKeyStates(
         inputService,
         uiConfig,
-        context.panelConfig,
         context.metrics,
         context.rowSet,
         m_keyGlowEffects,
-        m_overlayOpacity,
-        m_layoutPresetIndex,
-        m_dragInteractionActive,
-        m_showDebugPanel,
-        GetLayoutPresetLabels(),
-        GetLayoutPresetCount());
-    ApplyOverlayPanelResult(
-        panelResult,
-        m_interactionHandlers,
-        m_dragInteractionActive,
-        m_layoutPresetIndex,
-        m_showDebugPanel,
-        m_layoutScale,
-        m_overlayOpacity);
-    if (panelResult.layoutPresetChanged)
-    {
-        InvalidateRenderContext();
-    }
+        m_showDebugPanel);
 }
 
 void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
@@ -133,6 +190,7 @@ const OverlayRenderContext& OverlayUI::GetRenderContext() const
         m_renderContextCache = BuildOverlayRenderContext(
             m_layoutScale,
             m_showDebugPanel,
+            m_consoleHidden,
             m_layoutPresetIndex,
             GetOverlayUIConfig());
         m_renderContextDirty = false;
@@ -143,5 +201,37 @@ const OverlayRenderContext& OverlayUI::GetRenderContext() const
 void OverlayUI::InvalidateRenderContext()
 {
     m_renderContextDirty = true;
+}
+
+void OverlayUI::UpdateConsoleCommandState(const InputService& inputService)
+{
+    AppendCommandLetter(inputService, 'H', 'h', m_consoleCommandBuffer);
+    AppendCommandLetter(inputService, 'I', 'i', m_consoleCommandBuffer);
+    AppendCommandLetter(inputService, 'D', 'd', m_consoleCommandBuffer);
+    AppendCommandLetter(inputService, 'E', 'e', m_consoleCommandBuffer);
+    AppendCommandLetter(inputService, 'S', 's', m_consoleCommandBuffer);
+    AppendCommandLetter(inputService, 'O', 'o', m_consoleCommandBuffer);
+    AppendCommandLetter(inputService, 'W', 'w', m_consoleCommandBuffer);
+
+    if (EndsWithCommand(m_consoleCommandBuffer, kHideCommand))
+    {
+        if (!m_consoleHidden)
+        {
+            m_consoleHidden = true;
+            InvalidateRenderContext();
+        }
+        m_consoleCommandBuffer.clear();
+        return;
+    }
+
+    if (EndsWithCommand(m_consoleCommandBuffer, kShowCommand))
+    {
+        if (m_consoleHidden)
+        {
+            m_consoleHidden = false;
+            InvalidateRenderContext();
+        }
+        m_consoleCommandBuffer.clear();
+    }
 }
 } // namespace keyviz
