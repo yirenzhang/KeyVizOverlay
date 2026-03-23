@@ -167,6 +167,35 @@ void Win32Window::SetOpacity(BYTE opacity)
     SetLayeredWindowAttributes(m_hwnd, 0, m_opacity, LWA_ALPHA);
 }
 
+void Win32Window::SetClickThrough(bool enabled)
+{
+    m_clickThrough = enabled;
+    if (m_hwnd == nullptr)
+    {
+        return;
+    }
+
+    LONG_PTR exStyle = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
+    if (m_clickThrough)
+    {
+        exStyle |= WS_EX_TRANSPARENT;
+    }
+    else
+    {
+        exStyle &= ~static_cast<LONG_PTR>(WS_EX_TRANSPARENT);
+    }
+
+    SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, exStyle);
+    SetWindowPos(
+        m_hwnd,
+        nullptr,
+        0,
+        0,
+        0,
+        0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+}
+
 
 HWND Win32Window::GetHwnd() const
 {

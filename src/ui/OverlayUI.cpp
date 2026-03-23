@@ -75,6 +75,11 @@ float OverlayUI::GetOverlayOpacity() const
     return m_overlayOpacity;
 }
 
+bool OverlayUI::IsConsoleHidden() const
+{
+    return m_consoleHidden;
+}
+
 void OverlayUI::Render(const InputService& inputService)
 {
     const OverlayUIConfig& uiConfig = GetOverlayUIConfig();

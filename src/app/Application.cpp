@@ -208,6 +208,7 @@ void Application::Tick()
 
     m_inputService.Update(deltaSeconds);
     m_ui.Update(deltaSeconds, m_inputService);
+    m_window.SetClickThrough(m_ui.IsConsoleHidden());
 
     m_windowDragActive = false;
 
