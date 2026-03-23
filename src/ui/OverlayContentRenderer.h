@@ -13,17 +13,12 @@
 
 namespace keyviz
 {
-OverlayPanelRenderResult RenderOverlayContent(
-    const InputService& inputService,
-    const OverlayUIConfig& uiConfig,
+OverlayPanelRenderResult RenderOverlayConsole(
     const OverlayPanelMetricsConfig& panelConfig,
     const LayoutMetrics& metrics,
-    KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
     float overlayOpacity,
     int layoutPresetIndex,
     bool dragInteractionActive,
-    bool showDebugPanel,
     const char* const* layoutPresetLabels,
     int layoutPresetCount);
 
@@ -33,4 +28,12 @@ void DrawOverlayKeyboardVisualizer(
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
     const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects);
+
+void RenderOverlayKeyStates(
+    const InputService& inputService,
+    const OverlayUIConfig& uiConfig,
+    const LayoutMetrics& metrics,
+    KeyRowSet rowSet,
+    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
+    bool showDebugPanel);
 } // namespace keyviz

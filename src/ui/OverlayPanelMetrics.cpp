@@ -30,22 +30,6 @@ float MeasureControlsRowHeight(const LayoutMetrics&)
     return ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeight();
 }
 
-float MeasureContentWidth(const LayoutMetrics& metrics, bool showDebugPanel, KeyRowSet rowSet, const OverlayPanelMetricsConfig& config)
-{
-    const float headerWidth = MeasureHeaderRowWidth(metrics, config);
-    const float controlsWidth = MeasureControlsRowWidth(metrics, config);
-    const float clusterWidth = MeasureMaxRowWidth(metrics, rowSet) + metrics.rowPaddingX * 2.0f + (config.keyStatesSectionInset * metrics.scale);
-    const float footerWidth = ImGui::CalcTextSize(config.footerText).x;
-
-    float contentWidth = (std::max)(headerWidth, (std::max)(controlsWidth, (std::max)(clusterWidth, footerWidth)));
-    if (showDebugPanel)
-    {
-        const float debugWidth = ImGui::CalcTextSize(config.debugHintText).x;
-        contentWidth = (std::max)(contentWidth, debugWidth);
-    }
-
-    return contentWidth;
-}
 }
 
 float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics)
@@ -54,29 +38,48 @@ float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics)
     return ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f + 18.0f * metrics.scale;
 }
 
-ImVec2 ComputeOverlayWindowSize(
+OverlayWindowSizes ComputeOverlayWindowSizes(
     const LayoutMetrics& metrics,
     bool showDebugPanel,
     KeyRowSet rowSet,
     const OverlayPanelMetricsConfig& config)
 {
-    // 根据当前预设与显示项动态估算窗口尺寸。
     const ImGuiStyle& style = ImGui::GetStyle();
-    const float contentWidth = MeasureContentWidth(metrics, showDebugPanel, rowSet, config);
+    const float headerWidth = MeasureHeaderRowWidth(metrics, config);
+    const float controlsWidth = MeasureControlsRowWidth(metrics, config);
+    const float clusterWidth = MeasureMaxRowWidth(metrics, rowSet) + metrics.rowPaddingX * 2.0f + (config.keyStatesSectionInset * metrics.scale);
+    const float footerWidth = ImGui::CalcTextSize(config.footerText).x;
+    const float debugWidth = showDebugPanel ? ImGui::CalcTextSize(config.debugHintText).x : 0.0f;
+
+    const float consoleContentWidth = (std::max)(headerWidth, controlsWidth);
+    float keyStatesContentWidth = (std::max)(clusterWidth, footerWidth);
+    if (showDebugPanel)
+    {
+        keyStatesContentWidth = (std::max)(keyStatesContentWidth, debugWidth);
+    }
+
+    float targetWindowWidth = (std::max)(consoleContentWidth, keyStatesContentWidth);
+    targetWindowWidth = targetWindowWidth + style.WindowPadding.x * 2.0f + 24.0f * metrics.scale;
+    targetWindowWidth = (std::max)(targetWindowWidth, config.minimumWindowWidth);
+
     const float headerRowHeight = (std::max)(metrics.dragBarHeight, ImGui::GetTextLineHeight());
     const float controlsRowHeight = MeasureControlsRowHeight(metrics);
     const float clusterHeight = MeasureClusterBackgroundHeight(metrics, rowSet);
     const float keyboardFooterHeight = ImGui::GetTextLineHeightWithSpacing();
-    const float debugHeight = showDebugPanel ? (ImGui::GetTextLineHeightWithSpacing() * 2.0f) : 0.0f;
+    const float debugHeight = showDebugPanel
+        ? (style.ItemSpacing.y + 1.0f * metrics.scale + ImGui::GetTextLineHeightWithSpacing() * 2.0f)
+        : 0.0f;
 
-    float windowWidth = contentWidth + style.WindowPadding.x * 2.0f + 24.0f * metrics.scale;
-    float windowHeight =
+    const float consoleWindowHeight =
         style.WindowPadding.y * 2.0f +
         headerRowHeight +
         style.ItemSpacing.y +
         controlsRowHeight +
-        style.ItemSpacing.y +
         style.ItemSpacing.y + 1.0f * metrics.scale +
+        24.0f * metrics.scale;
+
+    const float keyStatesWindowHeight =
+        style.WindowPadding.y * 2.0f +
         ImGui::GetTextLineHeight() +
         config.sectionGap * metrics.scale +
         clusterHeight +
@@ -85,8 +88,24 @@ ImVec2 ComputeOverlayWindowSize(
         debugHeight +
         24.0f * metrics.scale;
 
-    windowWidth = (std::max)(windowWidth, config.minimumWindowWidth);
-    windowHeight = (std::max)(windowHeight, config.minimumWindowHeight);
-    return ImVec2(windowWidth, windowHeight);
+    const float windowGap = 8.0f * metrics.scale;
+    float totalWindowHeight = consoleWindowHeight + windowGap + keyStatesWindowHeight;
+    totalWindowHeight = (std::max)(totalWindowHeight, config.minimumWindowHeight);
+
+    OverlayWindowSizes sizes{};
+    sizes.consoleSize = ImVec2(targetWindowWidth, consoleWindowHeight);
+    sizes.keyStatesSize = ImVec2(targetWindowWidth, keyStatesWindowHeight);
+    sizes.totalSize = ImVec2(targetWindowWidth, totalWindowHeight);
+    sizes.windowGap = windowGap;
+    return sizes;
+}
+
+ImVec2 ComputeOverlayWindowSize(
+    const LayoutMetrics& metrics,
+    bool showDebugPanel,
+    KeyRowSet rowSet,
+    const OverlayPanelMetricsConfig& config)
+{
+    return ComputeOverlayWindowSizes(metrics, showDebugPanel, rowSet, config).totalSize;
 }
 } // namespace keyviz

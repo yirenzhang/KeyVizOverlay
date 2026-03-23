@@ -24,7 +24,20 @@ struct OverlayPanelMetricsConfig
     float sectionGap = 16.0f;
 };
 
+struct OverlayWindowSizes
+{
+    ImVec2 consoleSize{};
+    ImVec2 keyStatesSize{};
+    ImVec2 totalSize{};
+    float windowGap = 0.0f;
+};
+
 float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics);
+OverlayWindowSizes ComputeOverlayWindowSizes(
+    const LayoutMetrics& metrics,
+    bool showDebugPanel,
+    KeyRowSet rowSet,
+    const OverlayPanelMetricsConfig& config);
 ImVec2 ComputeOverlayWindowSize(
     const LayoutMetrics& metrics,
     bool showDebugPanel,

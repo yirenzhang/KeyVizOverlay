@@ -4,7 +4,7 @@ namespace keyviz
 {
 OverlayWindowScope::OverlayWindowScope(const OverlayWindowConfig& config)
 {
-    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(config.position, ImGuiCond_Always);
     ImGui::SetNextWindowSize(config.preferredSize, ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(config.overlayOpacity);
 
