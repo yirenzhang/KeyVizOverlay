@@ -86,11 +86,10 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     ImGui::BeginGroup();
     ImGui::TextUnformatted(config.keySizeLabel);
     ImGui::SetNextItemWidth(config.keySizeSliderWidth * metrics.scale);
-    int keySizePercent = static_cast<int>(result.layoutScale * 100.0f + 0.5f);
-    // 与布局缩放下限保持一致，避免滑条显示值与实际值反复冲突。
-    if (ImGui::SliderInt("##KeySizeScale", &keySizePercent, 70, 180, "%d%%"))
+    int keyScaleMultiplier = static_cast<int>(result.layoutScale + 0.5f);
+    if (ImGui::SliderInt("##KeySizeScale", &keyScaleMultiplier, 1, 4, "%dx"))
     {
-        result.layoutScale = static_cast<float>(keySizePercent) / 100.0f;
+        result.layoutScale = static_cast<float>(keyScaleMultiplier);
         result.layoutScaleChanged = true;
     }
     ImGui::EndGroup();

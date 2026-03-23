@@ -1,6 +1,7 @@
 #include "OverlayUILayout.h"
 
 #include <algorithm>
+#include <cmath>
 #include <windows.h>
 
 #ifdef max
@@ -22,8 +23,8 @@ constexpr float kBaseRowSpacing = 12.0f;
 constexpr float kBaseRowPaddingX = 14.0f;
 constexpr float kBaseRowPaddingY = 12.0f;
 constexpr float kBaseDragBarHeight = 18.0f;
-constexpr float kMinLayoutScale = 0.7f;
-constexpr float kMaxLayoutScale = 1.8f;
+constexpr float kMinLayoutScale = 1.0f;
+constexpr float kMaxLayoutScale = 4.0f;
 
 bool IsMouseVisualRow(const KeyRow& row)
 {
@@ -59,7 +60,8 @@ float GetMouseVisualHeight(const LayoutMetrics& metrics, std::size_t keyboardRow
 
 float ClampLayoutScale(float scale)
 {
-    return std::clamp(scale, kMinLayoutScale, kMaxLayoutScale);
+    // 像素风格统一采用整数倍缩放，避免非整数插值导致发虚。
+    return std::round(std::clamp(scale, kMinLayoutScale, kMaxLayoutScale));
 }
 
 LayoutMetrics BuildLayoutMetrics(float scale)
@@ -68,13 +70,13 @@ LayoutMetrics BuildLayoutMetrics(float scale)
 
     LayoutMetrics metrics{};
     metrics.scale = scale;
-    metrics.keyWidth = kBaseKeyWidth * scale;
-    metrics.keyHeight = kBaseKeyHeight * scale;
-    metrics.keySpacing = kBaseKeySpacing * scale;
-    metrics.rowSpacing = kBaseRowSpacing * scale;
-    metrics.rowPaddingX = kBaseRowPaddingX * scale;
-    metrics.rowPaddingY = kBaseRowPaddingY * scale;
-    metrics.dragBarHeight = kBaseDragBarHeight * scale;
+    metrics.keyWidth = std::round(kBaseKeyWidth * scale);
+    metrics.keyHeight = std::round(kBaseKeyHeight * scale);
+    metrics.keySpacing = std::round(kBaseKeySpacing * scale);
+    metrics.rowSpacing = std::round(kBaseRowSpacing * scale);
+    metrics.rowPaddingX = std::round(kBaseRowPaddingX * scale);
+    metrics.rowPaddingY = std::round(kBaseRowPaddingY * scale);
+    metrics.dragBarHeight = std::round(kBaseDragBarHeight * scale);
     return metrics;
 }
 

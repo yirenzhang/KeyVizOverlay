@@ -1,7 +1,9 @@
 #include "OverlayKeyRenderer.h"
 
 #include <algorithm>
+#include <array>
 #include <cfloat>
+#include <cstring>
 #include <cmath>
 #include <vector>
 
@@ -20,6 +22,16 @@ namespace keyviz
 {
 namespace
 {
+struct FontSelection
+{
+    ImFont* font = nullptr;
+};
+
+constexpr std::array<float, 6> kOverlayFontSizes =
+{
+    12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f
+};
+
 ImVec4 LerpColor(const ImVec4& a, const ImVec4& b, float t)
 {
     t = std::clamp(t, 0.0f, 1.0f);
@@ -51,6 +63,38 @@ const GlowEffect* FindGlowEffect(const std::unordered_map<std::uint32_t, GlowEff
     }
 
     return &glowIt->second;
+}
+
+FontSelection SelectNearestFont(float targetSize)
+{
+    ImFontAtlas* atlas = ImGui::GetIO().Fonts;
+    if (atlas == nullptr || atlas->Fonts.empty())
+    {
+        return FontSelection{ ImGui::GetFont() };
+    }
+
+    const std::size_t fontCount = atlas->Fonts.size();
+    const std::size_t keyFontCount = kOverlayFontSizes.size();
+    if (fontCount <= keyFontCount)
+    {
+        return FontSelection{ atlas->Fonts[fontCount - 1U] };
+    }
+    const std::size_t keyFontStart = fontCount - keyFontCount;
+
+    std::size_t bestIndex = 0U;
+    float bestDistance = std::abs(kOverlayFontSizes[0] - targetSize);
+    for (std::size_t i = 1; i < kOverlayFontSizes.size(); ++i)
+    {
+        const float distance = std::abs(kOverlayFontSizes[i] - targetSize);
+        if (distance < bestDistance)
+        {
+            bestDistance = distance;
+            bestIndex = i;
+        }
+    }
+
+    const std::size_t atlasIndex = keyFontStart + bestIndex;
+    return FontSelection{ atlas->Fonts[atlasIndex] };
 }
 
 bool IsMouseVisualRow(const KeyBinding* keys, std::size_t keyCount)
@@ -89,6 +133,16 @@ float LerpFloat(float a, float b, float t)
     return a + (b - a) * t;
 }
 
+float SnapPixel(float value)
+{
+    return std::floor(value + 0.5f);
+}
+
+ImVec2 SnapVec2(const ImVec2& value)
+{
+    return ImVec2(SnapPixel(value.x), SnapPixel(value.y));
+}
+
 float GetSegmentXAtY(const ImVec2& a, const ImVec2& b, float y)
 {
     const float dy = b.y - a.y;
@@ -114,10 +168,10 @@ void DrawMouseShape(
     const float upperSplitY = mouseMin.y + mouseSize.y * 0.42f;
     const float sideInset = mouseSize.x * 0.15f;
     const float taperInset = mouseSize.x * 0.08f;
-    const float lineThickness = 1.0f * metrics.scale;
+    const float lineThickness = (std::max)(1.0f, SnapPixel(1.0f * metrics.scale));
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
-    const ImVec2 shellPoints[6] =
+    ImVec2 shellPoints[6] =
     {
         ImVec2(mouseMin.x + sideInset, mouseMin.y),
         ImVec2(mouseMax.x - sideInset, mouseMin.y),
@@ -126,6 +180,10 @@ void DrawMouseShape(
         ImVec2(mouseMin.x + taperInset, mouseMax.y),
         ImVec2(mouseMin.x, upperSplitY),
     };
+    for (ImVec2& point : shellPoints)
+    {
+        point = SnapVec2(point);
+    }
     drawList->AddPolyline(shellPoints, 6, ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.92f)), true, lineThickness);
 
     const float topY = mouseMin.y + lineThickness;
@@ -180,26 +238,38 @@ void DrawMouseShape(
         drawList->AddConvexPolyFilled(points, 4, ImGui::GetColorU32(fillColor));
     };
 
-    const ImVec2 leftPoints[4] = { leftTopLeft, leftTopRight, leftBottomRight, leftBottomLeft };
-    const ImVec2 middlePoints[4] = { middleTopLeft, middleTopRight, middleBottomRight, middleBottomLeft };
-    const ImVec2 rightPoints[4] = { rightTopLeft, rightTopRight, rightBottomRight, rightBottomLeft };
+    ImVec2 leftPoints[4] = { leftTopLeft, leftTopRight, leftBottomRight, leftBottomLeft };
+    ImVec2 middlePoints[4] = { middleTopLeft, middleTopRight, middleBottomRight, middleBottomLeft };
+    ImVec2 rightPoints[4] = { rightTopLeft, rightTopRight, rightBottomRight, rightBottomLeft };
+    for (ImVec2& point : leftPoints)
+    {
+        point = SnapVec2(point);
+    }
+    for (ImVec2& point : middlePoints)
+    {
+        point = SnapVec2(point);
+    }
+    for (ImVec2& point : rightPoints)
+    {
+        point = SnapVec2(point);
+    }
     drawButtonRegion(leftPoints, leftKey);
     drawButtonRegion(middlePoints, middleKey);
     drawButtonRegion(rightPoints, rightKey);
 
     drawList->AddLine(
-        ImVec2(leftDividerX, topY),
-        ImVec2(leftDividerX, bottomY),
+        SnapVec2(ImVec2(leftDividerX, topY)),
+        SnapVec2(ImVec2(leftDividerX, bottomY)),
         ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.55f)),
         lineThickness);
     drawList->AddLine(
-        ImVec2(rightDividerX, topY),
-        ImVec2(rightDividerX, bottomY),
+        SnapVec2(ImVec2(rightDividerX, topY)),
+        SnapVec2(ImVec2(rightDividerX, bottomY)),
         ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.55f)),
         lineThickness);
     drawList->AddLine(
-        ImVec2(leftBottomX, bottomY),
-        ImVec2(rightBottomX, bottomY),
+        SnapVec2(ImVec2(leftBottomX, bottomY)),
+        SnapVec2(ImVec2(rightBottomX, bottomY)),
         ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.42f)),
         lineThickness);
 
@@ -207,10 +277,10 @@ void DrawMouseShape(
     const float wheelTopY = LerpFloat(topY, bottomY, 0.20f);
     const float wheelBottomY = LerpFloat(topY, bottomY, 0.72f);
     drawList->AddLine(
-        ImVec2(wheelCenterX, wheelTopY),
-        ImVec2(wheelCenterX, wheelBottomY),
+        SnapVec2(ImVec2(wheelCenterX, wheelTopY)),
+        SnapVec2(ImVec2(wheelCenterX, wheelBottomY)),
         ImGui::GetColorU32(ImVec4(0.92f, 0.95f, 1.00f, 0.85f)),
-        2.0f * metrics.scale);
+        (std::max)(1.0f, SnapPixel(2.0f * metrics.scale)));
 
 }
 
@@ -233,7 +303,7 @@ void DrawKeyCap(const char* label, float animationValue, bool wasPressed, float 
     const ImVec2 buttonSize = ImVec2(keyWidth, GetKeyVisualHeight(metrics));
     const ImVec2 keyMin = ImGui::GetCursorScreenPos();
     const ImVec2 keyMax(keyMin.x + buttonSize.x, keyMin.y + buttonSize.y);
-    const float slantOffset = 7.0f * metrics.scale;
+    const float slantOffset = SnapPixel(7.0f * metrics.scale);
     ImVec2 points[4] =
     {
         ImVec2(keyMin.x + slantOffset, keyMin.y),
@@ -241,31 +311,43 @@ void DrawKeyCap(const char* label, float animationValue, bool wasPressed, float 
         ImVec2(keyMax.x - slantOffset, keyMax.y),
         ImVec2(keyMin.x, keyMax.y),
     };
+    for (ImVec2& point : points)
+    {
+        point = SnapVec2(point);
+    }
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     drawList->AddConvexPolyFilled(points, 4, ImGui::GetColorU32(fillColor));
-    drawList->AddPolyline(points, 4, ImGui::GetColorU32(borderColor), true, 1.0f * metrics.scale);
+    drawList->AddPolyline(points, 4, ImGui::GetColorU32(borderColor), true, (std::max)(1.0f, SnapPixel(1.0f * metrics.scale)));
 
     if (label != nullptr && label[0] != '\0')
     {
-        // 使用整数字号与像素对齐，降低缩放文本发虚问题。
-        ImFont* font = ImGui::GetFont();
-        float labelFontSize = ImGui::GetFontSize() * metrics.scale * 0.95f;
-        labelFontSize = std::clamp(labelFontSize, 10.0f, 42.0f);
-        labelFontSize = std::round(labelFontSize);
-        const ImVec2 textSize = font->CalcTextSizeA(labelFontSize, FLT_MAX, 0.0f, label);
+        // 选择最接近目标字号的栅格字体，避免单字体连续缩放带来的模糊。
+        float targetFontSize = ImGui::GetFontSize() * metrics.scale * 0.95f;
+        targetFontSize = std::clamp(targetFontSize, 10.0f, 42.0f);
+        const FontSelection fontSelection = SelectNearestFont(targetFontSize);
+        ImFont* font = fontSelection.font != nullptr ? fontSelection.font : ImGui::GetFont();
+
+        ImGui::PushFont(font);
+        const ImVec2 textSize = ImGui::CalcTextSize(label);
         const float innerPadX = 5.0f * metrics.scale;
         const float innerPadY = 3.0f * metrics.scale;
-        const ImVec2 clipMin(keyMin.x + slantOffset + innerPadX, keyMin.y + innerPadY);
-        const ImVec2 clipMax(keyMax.x - innerPadX, keyMax.y - innerPadY);
+        const ImVec2 clipMin = SnapVec2(ImVec2(keyMin.x + slantOffset + innerPadX, keyMin.y + innerPadY));
+        const ImVec2 clipMax = SnapVec2(ImVec2(keyMax.x - innerPadX, keyMax.y - innerPadY));
         float textPosX = keyMin.x + (buttonSize.x - textSize.x) * 0.5f;
+        // SHIFT/CTRL 在宽键帽中视觉中心略偏右，做轻微左移微调。
+        if (std::strcmp(label, "SHIFT") == 0 || std::strcmp(label, "CTRL") == 0)
+        {
+            textPosX -= (std::max)(1.0f, std::round(metrics.scale));
+        }
         textPosX = (std::max)(textPosX, clipMin.x);
         float textPosY = keyMin.y + (buttonSize.y - textSize.y) * 0.5f;
         textPosX = std::floor(textPosX + 0.5f);
         textPosY = std::floor(textPosY + 0.5f);
         drawList->PushClipRect(clipMin, clipMax, true);
-        drawList->AddText(font, labelFontSize, ImVec2(textPosX, textPosY), ImGui::GetColorU32(textColor), label);
+        drawList->AddText(ImVec2(textPosX, textPosY), ImGui::GetColorU32(textColor), label);
         drawList->PopClipRect();
+        ImGui::PopFont();
     }
 
     ImGui::Dummy(buttonSize);
