@@ -8,6 +8,7 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     const OverlayPanelMetricsConfig& config,
     const LayoutMetrics& metrics,
     float overlayOpacity,
+    float layoutScale,
     int layoutPresetIndex,
     const char* const* layoutPresetLabels,
     int layoutPresetCount,
@@ -16,6 +17,7 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     OverlayPanelRenderResult result{};
     result.layoutPresetIndex = layoutPresetIndex;
     result.overlayOpacity = overlayOpacity;
+    result.layoutScale = layoutScale;
     result.dragInteractionActive = dragInteractionActive;
 
     ImGui::TextUnformatted(config.title);
@@ -79,6 +81,19 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
 
     ImGui::EndGroup();
     ImGui::PopStyleVar();
+
+    ImGui::Spacing();
+    ImGui::BeginGroup();
+    ImGui::TextUnformatted(config.keySizeLabel);
+    ImGui::SetNextItemWidth(config.keySizeSliderWidth * metrics.scale);
+    int keySizePercent = static_cast<int>(result.layoutScale * 100.0f + 0.5f);
+    // 与布局缩放下限保持一致，避免滑条显示值与实际值反复冲突。
+    if (ImGui::SliderInt("##KeySizeScale", &keySizePercent, 70, 180, "%d%%"))
+    {
+        result.layoutScale = static_cast<float>(keySizePercent) / 100.0f;
+        result.layoutScaleChanged = true;
+    }
+    ImGui::EndGroup();
 
     return result;
 }

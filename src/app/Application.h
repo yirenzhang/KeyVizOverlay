@@ -38,6 +38,8 @@ private:
     unsigned int m_lastClientHeight = 0;
     bool m_windowDragActive = false;
     bool m_layoutResizePending = true;
+    int m_pendingClientWidth = 0;
+    int m_pendingClientHeight = 0;
 
     bool m_imguiContextCreated = false;
     bool m_imguiWin32Initialized = false;

@@ -208,6 +208,7 @@ void Application::Tick()
 
     m_inputService.Update(deltaSeconds);
     m_ui.Update(deltaSeconds, m_inputService);
+    m_window.SetClickThrough(m_ui.IsConsoleHidden());
 
     m_windowDragActive = false;
 
@@ -238,9 +239,30 @@ void Application::UpdateRendererSize()
     const ImVec2 preferredSize = m_ui.GetPreferredWindowSize();
     if (preferredSize.x > 0.0f && preferredSize.y > 0.0f)
     {
-        m_window.ResizeClientSize(
-            static_cast<int>(preferredSize.x),
-            static_cast<int>(preferredSize.y));
+        const int targetWidth = static_cast<int>(preferredSize.x + 0.5f);
+        const int targetHeight = static_cast<int>(preferredSize.y + 0.5f);
+        if (targetWidth > 0 && targetHeight > 0 &&
+            (targetWidth != m_pendingClientWidth || targetHeight != m_pendingClientHeight))
+        {
+            m_pendingClientWidth = targetWidth;
+            m_pendingClientHeight = targetHeight;
+            m_layoutResizePending = true;
+        }
+    }
+
+    if (m_layoutResizePending)
+    {
+        // 拖动滑条期间暂缓重设宿主窗口，避免频繁 Resize 导致交互卡顿或窗口状态异常。
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        {
+            return;
+        }
+
+        if (m_pendingClientWidth > 0 && m_pendingClientHeight > 0)
+        {
+            m_window.ResizeClientSize(m_pendingClientWidth, m_pendingClientHeight);
+        }
+        m_layoutResizePending = false;
     }
 
     RECT clientRect{};

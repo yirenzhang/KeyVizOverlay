@@ -21,6 +21,7 @@ public:
     void MoveBy(int deltaX, int deltaY);
     void ResizeClientSize(int clientWidth, int clientHeight);
     void SetOpacity(BYTE opacity);
+    void SetClickThrough(bool enabled);
 
     HWND GetHwnd() const;
     HINSTANCE GetInstance() const;
@@ -37,5 +38,6 @@ private:
     void* m_messageHandlerContext = nullptr;
     bool m_classRegistered = false;
     BYTE m_opacity = 255;
+    bool m_clickThrough = false;
 };
 }

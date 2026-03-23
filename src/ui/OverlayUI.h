@@ -29,6 +29,7 @@ public:
 
     ImVec2 GetPreferredWindowSize() const;
     float GetOverlayOpacity() const;
+    bool IsConsoleHidden() const;
     void SetShowDebugPanel(bool show);
     void SetExitRequestHandler(ExitRequestHandler handler, void* context = nullptr);
     void SetDragRequestHandler(DragRequestHandler handler, void* context = nullptr);

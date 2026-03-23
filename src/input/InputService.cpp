@@ -123,23 +123,81 @@ void InputService::HandleRawInput(HRAWINPUT rawInput)
     }
 
     const RAWINPUT* raw = reinterpret_cast<const RAWINPUT*>(m_rawInputBuffer.data());
-    if (raw->header.dwType != RIM_TYPEKEYBOARD)
+    if (raw->header.dwType == RIM_TYPEKEYBOARD)
+    {
+        const RAWKEYBOARD& keyboard = raw->data.keyboard;
+        if (keyboard.VKey == 0U || keyboard.VKey == 255U)
+        {
+            return;
+        }
+
+        InputEvent event{};
+        event.keyCode = keyboard.VKey;
+        event.timestampMs = static_cast<std::uint64_t>(GetMessageTime());
+        event.type = (keyboard.Flags & RI_KEY_BREAK) ? InputEvent::Type::KeyUp : InputEvent::Type::KeyDown;
+        event.isRepeat = false;
+        HandleEvent(event);
+        return;
+    }
+
+    if (raw->header.dwType != RIM_TYPEMOUSE)
     {
         return;
     }
 
-    const RAWKEYBOARD& keyboard = raw->data.keyboard;
-    if (keyboard.VKey == 0U || keyboard.VKey == 255U)
-    {
-        return;
-    }
+    const RAWMOUSE& mouse = raw->data.mouse;
+    const USHORT buttonFlags = mouse.usButtonFlags;
+    const std::uint64_t timestampMs = static_cast<std::uint64_t>(GetMessageTime());
 
-    InputEvent event{};
-    event.keyCode = keyboard.VKey;
-    event.timestampMs = static_cast<std::uint64_t>(GetMessageTime());
-    event.type = (keyboard.Flags & RI_KEY_BREAK) ? InputEvent::Type::KeyUp : InputEvent::Type::KeyDown;
-    event.isRepeat = false;
-    HandleEvent(event);
+    auto emitMouseButtonEvent = [&](std::uint32_t keyCode, bool pressed) {
+        InputEvent event{};
+        event.keyCode = keyCode;
+        event.timestampMs = timestampMs;
+        event.type = pressed ? InputEvent::Type::KeyDown : InputEvent::Type::KeyUp;
+        event.isRepeat = false;
+        HandleEvent(event);
+    };
+
+    if ((buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
+    {
+        emitMouseButtonEvent(VK_LBUTTON, true);
+    }
+    if ((buttonFlags & RI_MOUSE_LEFT_BUTTON_UP) != 0)
+    {
+        emitMouseButtonEvent(VK_LBUTTON, false);
+    }
+    if ((buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) != 0)
+    {
+        emitMouseButtonEvent(VK_RBUTTON, true);
+    }
+    if ((buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP) != 0)
+    {
+        emitMouseButtonEvent(VK_RBUTTON, false);
+    }
+    if ((buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) != 0)
+    {
+        emitMouseButtonEvent(VK_MBUTTON, true);
+    }
+    if ((buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) != 0)
+    {
+        emitMouseButtonEvent(VK_MBUTTON, false);
+    }
+    if ((buttonFlags & RI_MOUSE_BUTTON_4_DOWN) != 0)
+    {
+        emitMouseButtonEvent(VK_XBUTTON1, true);
+    }
+    if ((buttonFlags & RI_MOUSE_BUTTON_4_UP) != 0)
+    {
+        emitMouseButtonEvent(VK_XBUTTON1, false);
+    }
+    if ((buttonFlags & RI_MOUSE_BUTTON_5_DOWN) != 0)
+    {
+        emitMouseButtonEvent(VK_XBUTTON2, true);
+    }
+    if ((buttonFlags & RI_MOUSE_BUTTON_5_UP) != 0)
+    {
+        emitMouseButtonEvent(VK_XBUTTON2, false);
+    }
 }
 
 const KeyState* InputService::TryGetKeyState(std::uint32_t keyCode) const

@@ -17,6 +17,7 @@ OverlayPanelRenderResult RenderOverlayConsole(
     const OverlayPanelMetricsConfig& panelConfig,
     const LayoutMetrics& metrics,
     float overlayOpacity,
+    float layoutScale,
     int layoutPresetIndex,
     bool dragInteractionActive,
     const char* const* layoutPresetLabels,

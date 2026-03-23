@@ -82,12 +82,18 @@ bool Win32Window::RegisterKeyboardRawInput()
         return false;
     }
 
-    RAWINPUTDEVICE device{};
-    device.usUsagePage = 0x01;
-    device.usUsage = 0x06;
-    device.dwFlags = RIDEV_INPUTSINK;
-    device.hwndTarget = m_hwnd;
-    return RegisterRawInputDevices(&device, 1, sizeof(device)) == TRUE;
+    RAWINPUTDEVICE devices[2]{};
+    devices[0].usUsagePage = 0x01;
+    devices[0].usUsage = 0x06;
+    devices[0].dwFlags = RIDEV_INPUTSINK;
+    devices[0].hwndTarget = m_hwnd;
+
+    devices[1].usUsagePage = 0x01;
+    devices[1].usUsage = 0x02;
+    devices[1].dwFlags = RIDEV_INPUTSINK;
+    devices[1].hwndTarget = m_hwnd;
+
+    return RegisterRawInputDevices(devices, 2, sizeof(RAWINPUTDEVICE)) == TRUE;
 }
 
 void Win32Window::MoveBy(int deltaX, int deltaY)
@@ -165,6 +171,35 @@ void Win32Window::SetOpacity(BYTE opacity)
     }
 
     SetLayeredWindowAttributes(m_hwnd, 0, m_opacity, LWA_ALPHA);
+}
+
+void Win32Window::SetClickThrough(bool enabled)
+{
+    m_clickThrough = enabled;
+    if (m_hwnd == nullptr)
+    {
+        return;
+    }
+
+    LONG_PTR exStyle = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
+    if (m_clickThrough)
+    {
+        exStyle |= WS_EX_TRANSPARENT;
+    }
+    else
+    {
+        exStyle &= ~static_cast<LONG_PTR>(WS_EX_TRANSPARENT);
+    }
+
+    SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, exStyle);
+    SetWindowPos(
+        m_hwnd,
+        nullptr,
+        0,
+        0,
+        0,
+        0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 }
 
 
