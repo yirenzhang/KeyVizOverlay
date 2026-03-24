@@ -19,7 +19,6 @@ struct OverlayRenderContext
 
 OverlayRenderContext BuildOverlayRenderContext(
     float layoutScale,
-    bool showDebugPanel,
     bool consoleHidden,
     int layoutPresetIndex,
     const OverlayUIConfig& uiConfig);

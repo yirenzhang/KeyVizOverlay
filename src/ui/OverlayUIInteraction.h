@@ -10,7 +10,6 @@ void ApplyOverlayPanelResult(
     OverlayUIInteractionHandlers handlers,
     bool& dragInteractionActive,
     int& layoutPresetIndex,
-    bool& showDebugPanel,
     float& layoutScale,
     float& overlayOpacity);
 } // namespace keyviz

@@ -10,7 +10,6 @@ void ApplyOverlayPanelResult(
     OverlayUIInteractionHandlers handlers,
     bool& dragInteractionActive,
     int& layoutPresetIndex,
-    bool& showDebugPanel,
     float& layoutScale,
     float& overlayOpacity)
 {
@@ -26,7 +25,7 @@ void ApplyOverlayPanelResult(
     if (panelResult.layoutPresetChanged)
     {
         layoutPresetIndex = panelResult.layoutPresetIndex;
-        ApplyLayoutPresetDefaults(layoutPresetIndex, showDebugPanel, layoutScale);
+        ApplyLayoutPresetDefaults(layoutPresetIndex, layoutScale);
     }
     if (panelResult.layoutScaleChanged)
     {

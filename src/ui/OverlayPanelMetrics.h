@@ -14,8 +14,6 @@ struct OverlayPanelMetricsConfig
     const char* layoutLabel = nullptr;
     const char* opacityLabel = nullptr;
     const char* keySizeLabel = nullptr;
-    const char* debugHintText = nullptr;
-    const char* footerText = nullptr;
 
     float keyStatesSectionInset = 16.0f;
     float layoutComboWidth = 164.0f;
@@ -37,12 +35,6 @@ struct OverlayWindowSizes
 float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics);
 OverlayWindowSizes ComputeOverlayWindowSizes(
     const LayoutMetrics& metrics,
-    bool showDebugPanel,
-    KeyRowSet rowSet,
-    const OverlayPanelMetricsConfig& config);
-ImVec2 ComputeOverlayWindowSize(
-    const LayoutMetrics& metrics,
-    bool showDebugPanel,
     KeyRowSet rowSet,
     const OverlayPanelMetricsConfig& config);
 } // namespace keyviz

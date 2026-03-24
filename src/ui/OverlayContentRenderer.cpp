@@ -4,24 +4,6 @@
 
 namespace keyviz
 {
-void DrawOverlayKeyboardVisualizer(
-    const InputService& inputService,
-    const OverlayUIConfig& uiConfig,
-    const LayoutMetrics& metrics,
-    KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects)
-{
-    DrawKeyboardCluster(
-        inputService,
-        rowSet,
-        metrics,
-        keyGlowEffects,
-        uiConfig.keyStatesSectionInset,
-        uiConfig.sectionGap,
-        uiConfig.keyStatesLabel,
-        uiConfig.futurePlanText);
-}
-
 OverlayPanelRenderResult RenderOverlayConsole(
     const OverlayPanelMetricsConfig& panelConfig,
     const LayoutMetrics& metrics,
@@ -48,16 +30,16 @@ void RenderOverlayKeyStates(
     const OverlayUIConfig& uiConfig,
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
-    bool showDebugPanel)
+    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects)
 {
     ImGui::Spacing();
-    DrawOverlayKeyboardVisualizer(inputService, uiConfig, metrics, rowSet, keyGlowEffects);
-    if (showDebugPanel)
-    {
-        ImGui::Separator();
-        ImGui::TextUnformatted(uiConfig.debugHintText);
-        ImGui::TextDisabled(uiConfig.debugTodoText);
-    }
+    DrawKeyboardCluster(
+        inputService,
+        rowSet,
+        metrics,
+        keyGlowEffects,
+        uiConfig.keyStatesSectionInset,
+        uiConfig.sectionGap,
+        uiConfig.keyStatesLabel);
 }
 } // namespace keyviz

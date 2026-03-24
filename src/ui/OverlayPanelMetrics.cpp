@@ -43,7 +43,6 @@ float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics)
 
 OverlayWindowSizes ComputeOverlayWindowSizes(
     const LayoutMetrics& metrics,
-    bool showDebugPanel,
     KeyRowSet rowSet,
     const OverlayPanelMetricsConfig& config)
 {
@@ -51,15 +50,9 @@ OverlayWindowSizes ComputeOverlayWindowSizes(
     const float headerWidth = MeasureHeaderRowWidth(metrics, config);
     const float controlsWidth = MeasureControlsRowWidth(metrics, config);
     const float clusterWidth = MeasureMaxRowWidth(metrics, rowSet) + metrics.rowPaddingX * 2.0f + (config.keyStatesSectionInset * metrics.scale);
-    const float footerWidth = ImGui::CalcTextSize(config.footerText).x;
-    const float debugWidth = showDebugPanel ? ImGui::CalcTextSize(config.debugHintText).x : 0.0f;
 
     const float consoleContentWidth = (std::max)(headerWidth, controlsWidth);
-    float keyStatesContentWidth = (std::max)(clusterWidth, footerWidth);
-    if (showDebugPanel)
-    {
-        keyStatesContentWidth = (std::max)(keyStatesContentWidth, debugWidth);
-    }
+    const float keyStatesContentWidth = clusterWidth;
 
     float targetWindowWidth = (std::max)(consoleContentWidth, keyStatesContentWidth);
     targetWindowWidth = targetWindowWidth + style.WindowPadding.x * 2.0f + 24.0f * metrics.scale;
@@ -68,10 +61,6 @@ OverlayWindowSizes ComputeOverlayWindowSizes(
     const float headerRowHeight = (std::max)(metrics.dragBarHeight, ImGui::GetTextLineHeight());
     const float controlsRowHeight = MeasureControlsRowHeight(metrics);
     const float clusterHeight = MeasureClusterBackgroundHeight(metrics, rowSet);
-    const float keyboardFooterHeight = ImGui::GetTextLineHeightWithSpacing();
-    const float debugHeight = showDebugPanel
-        ? (style.ItemSpacing.y + 1.0f * metrics.scale + ImGui::GetTextLineHeightWithSpacing() * 2.0f)
-        : 0.0f;
 
     const float consoleWindowHeight =
         style.WindowPadding.y * 2.0f +
@@ -86,9 +75,6 @@ OverlayWindowSizes ComputeOverlayWindowSizes(
         ImGui::GetTextLineHeight() +
         config.sectionGap * metrics.scale +
         clusterHeight +
-        style.ItemSpacing.y +
-        keyboardFooterHeight +
-        debugHeight +
         24.0f * metrics.scale;
 
     const float windowGap = 8.0f * metrics.scale;
@@ -103,12 +89,4 @@ OverlayWindowSizes ComputeOverlayWindowSizes(
     return sizes;
 }
 
-ImVec2 ComputeOverlayWindowSize(
-    const LayoutMetrics& metrics,
-    bool showDebugPanel,
-    KeyRowSet rowSet,
-    const OverlayPanelMetricsConfig& config)
-{
-    return ComputeOverlayWindowSizes(metrics, showDebugPanel, rowSet, config).totalSize;
-}
 } // namespace keyviz

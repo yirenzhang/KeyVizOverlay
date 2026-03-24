@@ -46,6 +46,11 @@ void AppendCommandLetter(const InputService& inputService, std::uint32_t keyCode
 void OverlayUI::Initialize()
 {
     m_keyGlowEffects.clear();
+    // 历史配置中可能残留已移除预设索引，这里统一回落到默认预设。
+    if (m_layoutPresetIndex < 0 || m_layoutPresetIndex >= GetLayoutPresetCount())
+    {
+        m_layoutPresetIndex = 0;
+    }
     m_consoleHidden = false;
     m_consoleCommandBuffer.clear();
     m_dragInteractionActive = false;
@@ -112,7 +117,6 @@ void OverlayUI::Render(const InputService& inputService)
             m_interactionHandlers,
             m_dragInteractionActive,
             m_layoutPresetIndex,
-            m_showDebugPanel,
             m_layoutScale,
             m_overlayOpacity);
         if (panelResult.layoutPresetChanged || panelResult.layoutScaleChanged)
@@ -140,25 +144,7 @@ void OverlayUI::Render(const InputService& inputService)
         uiConfig,
         context->metrics,
         context->rowSet,
-        m_keyGlowEffects,
-        m_showDebugPanel);
-}
-
-void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
-{
-    const OverlayUIConfig& uiConfig = GetOverlayUIConfig();
-    const OverlayRenderContext& context = GetRenderContext();
-    DrawOverlayKeyboardVisualizer(inputService, uiConfig, context.metrics, context.rowSet, m_keyGlowEffects);
-}
-
-void OverlayUI::SetShowDebugPanel(bool show)
-{
-    if (m_showDebugPanel == show)
-    {
-        return;
-    }
-    m_showDebugPanel = show;
-    InvalidateRenderContext();
+        m_keyGlowEffects);
 }
 
 void OverlayUI::SetExitRequestHandler(ExitRequestHandler handler, void* context)
@@ -196,7 +182,6 @@ const OverlayRenderContext& OverlayUI::GetRenderContext() const
     {
         m_renderContextCache = BuildOverlayRenderContext(
             m_layoutScale,
-            m_showDebugPanel,
             m_consoleHidden,
             m_layoutPresetIndex,
             GetOverlayUIConfig());

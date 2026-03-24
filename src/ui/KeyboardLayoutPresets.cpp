@@ -10,101 +10,61 @@ namespace
 {
 constexpr KeyBinding kTopRowKeys[] =
 {
-    { "Tab", VK_TAB, 1.10f },
-    { "Q", 'Q', 1.00f },
-    { "W", 'W', 1.00f },
-    { "E", 'E', 1.00f },
-    { "R", 'R', 1.00f },
+    { "TAB", VK_TAB, 0.96f },
+    { "Q", 'Q', 0.86f },
+    { "W", 'W', 0.86f },
+    { "E", 'E', 0.86f },
+    { "R", 'R', 0.86f },
 };
 
 constexpr KeyBinding kMiddleRowKeys[] =
 {
-    { "Shift", VK_SHIFT, 1.35f },
-    { "A", 'A', 1.00f },
-    { "S", 'S', 1.00f },
-    { "D", 'D', 1.00f },
-    { "F", 'F', 1.00f },
+    { "SHIFT", VK_SHIFT, 1.18f },
+    { "A", 'A', 0.86f },
+    { "S", 'S', 0.86f },
+    { "D", 'D', 0.86f },
+    { "F", 'F', 0.86f },
 };
 
 constexpr KeyBinding kBottomRowKeys[] =
 {
-    { "Ctrl", VK_CONTROL, 1.25f },
-    { "Space", VK_SPACE, 3.20f },
-    { "Alt", VK_MENU, 1.20f },
+    { "CTRL", VK_CONTROL, 1.02f },
+    { "", VK_SPACE, 3.14f },
 };
 
 constexpr KeyBinding kMouseRowKeys[] =
 {
-    { "LMB", VK_LBUTTON, 1.25f },
-    { "RMB", VK_RBUTTON, 1.25f },
-    { "MMB", VK_MBUTTON, 1.25f },
-};
-
-constexpr KeyBinding kCoreBottomRowKeys[] =
-{
-    { "Ctrl", VK_CONTROL, 1.25f },
-    { "Space", VK_SPACE, 4.60f },
-};
-
-constexpr KeyBinding kActionRowKeys[] =
-{
-    { "Z", 'Z', 1.00f },
-    { "X", 'X', 1.00f },
-    { "C", 'C', 1.00f },
-    { "V", 'V', 1.00f },
-    { "T", 'T', 1.00f },
-    { "G", 'G', 1.00f },
-};
-
-constexpr KeyBinding kNumberRowKeys[] =
-{
-    { "1", '1', 1.00f },
-    { "2", '2', 1.00f },
-    { "3", '3', 1.00f },
-    { "4", '4', 1.00f },
-    { "5", '5', 1.00f },
+    { "", VK_LBUTTON, 1.00f },
+    { "", VK_RBUTTON, 1.00f },
+    { "", VK_MBUTTON, 1.00f },
 };
 
 constexpr const char* kLayoutPresetLabels[] =
 {
     "Keyboard Only",
     "Keyboard + Mouse",
-    "WASD Core",
 };
 
 constexpr std::size_t kTopRowKeyCount = sizeof(kTopRowKeys) / sizeof(kTopRowKeys[0]);
 constexpr std::size_t kMiddleRowKeyCount = sizeof(kMiddleRowKeys) / sizeof(kMiddleRowKeys[0]);
 constexpr std::size_t kBottomRowKeyCount = sizeof(kBottomRowKeys) / sizeof(kBottomRowKeys[0]);
 constexpr std::size_t kMouseRowKeyCount = sizeof(kMouseRowKeys) / sizeof(kMouseRowKeys[0]);
-constexpr std::size_t kCoreBottomRowKeyCount = sizeof(kCoreBottomRowKeys) / sizeof(kCoreBottomRowKeys[0]);
-constexpr std::size_t kActionRowKeyCount = sizeof(kActionRowKeys) / sizeof(kActionRowKeys[0]);
-constexpr std::size_t kNumberRowKeyCount = sizeof(kNumberRowKeys) / sizeof(kNumberRowKeys[0]);
 
-constexpr std::array<KeyRow, 5> kExtendedRows =
+constexpr std::array<KeyRow, 3> kKeyboardRows =
 {
     KeyRow{ kTopRowKeys, kTopRowKeyCount },
     KeyRow{ kMiddleRowKeys, kMiddleRowKeyCount },
     KeyRow{ kBottomRowKeys, kBottomRowKeyCount },
-    KeyRow{ kActionRowKeys, kActionRowKeyCount },
-    KeyRow{ kNumberRowKeys, kNumberRowKeyCount },
 };
 
-constexpr std::array<KeyRow, 6> kExtendedMouseRows =
+constexpr std::array<KeyRow, 4> kKeyboardMouseRows =
 {
     KeyRow{ kTopRowKeys, kTopRowKeyCount },
     KeyRow{ kMiddleRowKeys, kMiddleRowKeyCount },
     KeyRow{ kBottomRowKeys, kBottomRowKeyCount },
-    KeyRow{ kActionRowKeys, kActionRowKeyCount },
-    KeyRow{ kNumberRowKeys, kNumberRowKeyCount },
     KeyRow{ kMouseRowKeys, kMouseRowKeyCount },
 };
 
-constexpr std::array<KeyRow, 3> kWASDCoreRows =
-{
-    KeyRow{ kTopRowKeys, kTopRowKeyCount },
-    KeyRow{ kMiddleRowKeys, kMiddleRowKeyCount },
-    KeyRow{ kCoreBottomRowKeys, kCoreBottomRowKeyCount },
-};
 }
 
 int GetLayoutPresetCount()
@@ -119,35 +79,24 @@ const char* const* GetLayoutPresetLabels()
 
 KeyRowSet GetRowsForPreset(int presetIndex)
 {
-    // 1 号预设显示键盘加鼠标，其余预设保持既有布局。
+    // 1 号预设显示键盘加鼠标，其余预设使用键盘布局。
     if (presetIndex == 1)
     {
-        return KeyRowSet{ kExtendedMouseRows.data(), kExtendedMouseRows.size() };
+        return KeyRowSet{ kKeyboardMouseRows.data(), kKeyboardMouseRows.size() };
     }
 
-    if (presetIndex == 2)
-    {
-        return KeyRowSet{ kWASDCoreRows.data(), kWASDCoreRows.size() };
-    }
-
-    return KeyRowSet{ kExtendedRows.data(), kExtendedRows.size() };
+    return KeyRowSet{ kKeyboardRows.data(), kKeyboardRows.size() };
 }
 
-void ApplyLayoutPresetDefaults(int presetIndex, bool& showDebugPanel, float& layoutScale)
+void ApplyLayoutPresetDefaults(int presetIndex, float& layoutScale)
 {
-    // 仅同步当前已实现的参数，避免预设切换没有反馈。
+    // 当前预设仅同步键位大小参数。
     switch (presetIndex)
     {
     case 0:
-        showDebugPanel = false;
         layoutScale = 1.0f;
         break;
     case 1:
-        showDebugPanel = true;
-        layoutScale = 1.0f;
-        break;
-    case 2:
-        showDebugPanel = false;
         layoutScale = 1.0f;
         break;
     default:

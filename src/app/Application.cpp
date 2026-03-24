@@ -5,20 +5,12 @@
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_win32.h"
+#include "ui/OverlayFontAtlas.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace keyviz
 {
-namespace
-{
-void TraceStartupStage(const char* stage)
-{
-    OutputDebugStringA(stage);
-    OutputDebugStringA("\n");
-}
-}
-
 LRESULT Application::WindowMessageThunk(void* context, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     auto* application = static_cast<Application*>(context);
@@ -69,8 +61,6 @@ void Application::WindowDragStateThunk(void* context, bool active)
     application->m_windowDragActive = active;
 }
 
-
-
 int Application::Run()
 {
     if (!Initialize())
@@ -104,79 +94,127 @@ bool Application::Initialize()
         Shutdown();
         return false;
     };
-    TraceStartupStage("Application::Initialize: input service");
+
     m_inputService.Initialize();
     m_window.SetMessageHandler(&Application::WindowMessageThunk, this);
 
     const HINSTANCE instance = GetModuleHandleW(nullptr);
-    TraceStartupStage("Application::Initialize: create window");
+    const wchar_t* failureReason = nullptr;
+    if (!InitializeWindowAndInput(instance, failureReason))
+    {
+        return failInitialize(failureReason != nullptr ? failureReason : L"Failed to initialize input window.");
+    }
+    if (!InitializeRendererAndImGui(failureReason))
+    {
+        return failInitialize(failureReason != nullptr ? failureReason : L"Failed to initialize renderer.");
+    }
+
+    ConfigureUiBindings();
+    m_ui.Initialize();
+    m_layoutResizePending = false;
+
+    CaptureInitialClientSize();
+
+    m_lastFrameTime = std::chrono::steady_clock::now();
+    return true;
+}
+
+bool Application::InitializeWindowAndInput(HINSTANCE instance, const wchar_t*& failureReason)
+{
     if (!m_window.Create(instance, SW_SHOWDEFAULT))
     {
-        return failInitialize(L"Failed to create the overlay window.");
+        failureReason = L"Failed to create the overlay window.";
+        return false;
     }
 
     ImGui_ImplWin32_EnableAlphaCompositing(m_window.GetHwnd());
 
-        if (!m_window.RegisterKeyboardRawInput())
+    if (!m_window.RegisterKeyboardRawInput())
     {
-        return failInitialize(L"Failed to register keyboard raw input.");
+        failureReason = L"Failed to register keyboard raw input.";
+        return false;
     }
 
-    TraceStartupStage("Application::Initialize: renderer");
-        if (!m_renderer.Initialize(m_window.GetHwnd()))
+    return true;
+}
+
+bool Application::InitializeRendererAndImGui(const wchar_t*& failureReason)
+{
+    if (!m_renderer.Initialize(m_window.GetHwnd()))
     {
-        return failInitialize(L"Failed to initialize the D3D11 renderer.");
+        failureReason = L"Failed to initialize the D3D11 renderer.";
+        return false;
     }
 
+    if (!InitializeImGuiContextAndStyle())
+    {
+        return false;
+    }
+
+    if (!InitializeImGuiBackends(failureReason))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Application::InitializeImGuiContextAndStyle()
+{
     IMGUI_CHECKVERSION();
-    TraceStartupStage("Application::Initialize: imgui context");
     ImGui::CreateContext();
     m_imguiContextCreated = true;
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    BuildOverlayFontAtlas(io);
 
     ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.AntiAliasedLines = false;
+    style.AntiAliasedLinesUseTex = false;
+    style.AntiAliasedFill = false;
+    return true;
+}
 
-    TraceStartupStage("Application::Initialize: imgui win32");
-        if (!ImGui_ImplWin32_Init(m_window.GetHwnd()))
+bool Application::InitializeImGuiBackends(const wchar_t*& failureReason)
+{
+    if (!ImGui_ImplWin32_Init(m_window.GetHwnd()))
     {
-        return failInitialize(L"Failed to initialize Dear ImGui Win32 backend.");
+        failureReason = L"Failed to initialize Dear ImGui Win32 backend.";
+        return false;
     }
     m_imguiWin32Initialized = true;
 
-    TraceStartupStage("Application::Initialize: imgui dx11");
-        if (!ImGui_ImplDX11_Init(m_renderer.GetDevice(), m_renderer.GetDeviceContext()))
+    if (!ImGui_ImplDX11_Init(m_renderer.GetDevice(), m_renderer.GetDeviceContext()))
     {
-        return failInitialize(L"Failed to initialize Dear ImGui DX11 backend.");
+        failureReason = L"Failed to initialize Dear ImGui DX11 backend.";
+        return false;
     }
     m_imguiDx11Initialized = true;
+    return true;
+}
 
+void Application::ConfigureUiBindings()
+{
     m_ui.SetExitRequestHandler(&Application::RequestExitThunk, this);
     m_ui.SetDragRequestHandler(&Application::MoveWindowThunk, this);
     m_ui.SetDragStateRequestHandler(&Application::WindowDragStateThunk, this);
+}
 
-    m_ui.SetLayoutScale(1.0f);
-    m_ui.Initialize();
-    m_layoutResizePending = false;
-
-
+void Application::CaptureInitialClientSize()
+{
     RECT clientRect{};
     if (GetClientRect(m_window.GetHwnd(), &clientRect))
     {
         m_lastClientWidth = static_cast<unsigned int>(clientRect.right - clientRect.left);
         m_lastClientHeight = static_cast<unsigned int>(clientRect.bottom - clientRect.top);
     }
-
-    m_lastFrameTime = std::chrono::steady_clock::now();
-    return true;
 }
 
-void Application::Shutdown()
+void Application::ShutdownImGui()
 {
-    m_ui.Shutdown();
-
     if (m_imguiDx11Initialized)
     {
         ImGui_ImplDX11_Shutdown();
@@ -194,10 +232,62 @@ void Application::Shutdown()
         ImGui::DestroyContext();
         m_imguiContextCreated = false;
     }
+}
+
+void Application::Shutdown()
+{
+    m_ui.Shutdown();
+    ShutdownImGui();
 
     m_renderer.Shutdown();
     m_inputService.Shutdown();
     m_window.Destroy();
+}
+
+void Application::CollectPreferredClientSize()
+{
+    const ImVec2 preferredSize = m_ui.GetPreferredWindowSize();
+    if (preferredSize.x <= 0.0f || preferredSize.y <= 0.0f)
+    {
+        return;
+    }
+
+    const int targetWidth = static_cast<int>(preferredSize.x + 0.5f);
+    const int targetHeight = static_cast<int>(preferredSize.y + 0.5f);
+    if (targetWidth <= 0 || targetHeight <= 0)
+    {
+        return;
+    }
+
+    if (targetWidth == m_pendingClientWidth && targetHeight == m_pendingClientHeight)
+    {
+        return;
+    }
+
+    m_pendingClientWidth = targetWidth;
+    m_pendingClientHeight = targetHeight;
+    m_layoutResizePending = true;
+}
+
+bool Application::ApplyPendingResize()
+{
+    if (!m_layoutResizePending)
+    {
+        return true;
+    }
+
+    // 拖动滑条期间暂缓重设宿主窗口，避免频繁 Resize 导致交互卡顿或窗口状态异常。
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    {
+        return false;
+    }
+
+    if (m_pendingClientWidth > 0 && m_pendingClientHeight > 0)
+    {
+        m_window.ResizeClientSize(m_pendingClientWidth, m_pendingClientHeight);
+    }
+    m_layoutResizePending = false;
+    return true;
 }
 
 void Application::Tick()
@@ -227,8 +317,6 @@ void Application::Tick()
     UpdateRendererSize();
 }
 
-
-
 void Application::UpdateRendererSize()
 {
     if (!m_renderer.IsReady() || m_windowDragActive)
@@ -236,33 +324,10 @@ void Application::UpdateRendererSize()
         return;
     }
 
-    const ImVec2 preferredSize = m_ui.GetPreferredWindowSize();
-    if (preferredSize.x > 0.0f && preferredSize.y > 0.0f)
+    CollectPreferredClientSize();
+    if (!ApplyPendingResize())
     {
-        const int targetWidth = static_cast<int>(preferredSize.x + 0.5f);
-        const int targetHeight = static_cast<int>(preferredSize.y + 0.5f);
-        if (targetWidth > 0 && targetHeight > 0 &&
-            (targetWidth != m_pendingClientWidth || targetHeight != m_pendingClientHeight))
-        {
-            m_pendingClientWidth = targetWidth;
-            m_pendingClientHeight = targetHeight;
-            m_layoutResizePending = true;
-        }
-    }
-
-    if (m_layoutResizePending)
-    {
-        // 拖动滑条期间暂缓重设宿主窗口，避免频繁 Resize 导致交互卡顿或窗口状态异常。
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
-        {
-            return;
-        }
-
-        if (m_pendingClientWidth > 0 && m_pendingClientHeight > 0)
-        {
-            m_window.ResizeClientSize(m_pendingClientWidth, m_pendingClientHeight);
-        }
-        m_layoutResizePending = false;
+        return;
     }
 
     RECT clientRect{};
@@ -287,4 +352,4 @@ void Application::UpdateRendererSize()
     m_lastClientHeight = clientHeight;
     m_renderer.Resize(clientWidth, clientHeight);
 }
-}
+} // namespace keyviz

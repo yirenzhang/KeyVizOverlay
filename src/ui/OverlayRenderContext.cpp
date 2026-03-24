@@ -6,7 +6,6 @@ namespace keyviz
 {
 OverlayRenderContext BuildOverlayRenderContext(
     float layoutScale,
-    bool showDebugPanel,
     bool consoleHidden,
     int layoutPresetIndex,
     const OverlayUIConfig& uiConfig)
@@ -32,7 +31,6 @@ OverlayRenderContext BuildOverlayRenderContext(
     }
     context.windowSizes = ComputeOverlayWindowSizes(
         context.metrics,
-        showDebugPanel,
         context.rowSet,
         context.panelConfig);
     if (consoleHidden)

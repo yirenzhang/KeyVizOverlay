@@ -27,5 +27,5 @@ struct KeyRowSet
 int GetLayoutPresetCount();
 const char* const* GetLayoutPresetLabels();
 KeyRowSet GetRowsForPreset(int presetIndex);
-void ApplyLayoutPresetDefaults(int presetIndex, bool& showDebugPanel, float& layoutScale);
+void ApplyLayoutPresetDefaults(int presetIndex, float& layoutScale);
 } // namespace keyviz
