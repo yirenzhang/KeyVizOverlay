@@ -13,10 +13,7 @@ struct OverlayUIConfig
     const char* layoutPresetLabel = nullptr;
     const char* opacityLabel = nullptr;
     const char* keySizeLabel = nullptr;
-    const char* debugHintText = nullptr;
-    const char* debugTodoText = nullptr;
     const char* keyStatesLabel = nullptr;
-    const char* futurePlanText = nullptr;
 
     float sectionGap = 0.0f;
     float keyStatesSectionInset = 0.0f;

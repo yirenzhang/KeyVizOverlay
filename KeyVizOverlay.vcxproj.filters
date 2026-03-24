@@ -69,6 +69,9 @@
     <ClCompile Include="src\ui\OverlayContentRenderer.cpp">
       <Filter>src\ui</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\OverlayFontAtlas.cpp">
+      <Filter>src\ui</Filter>
+    </ClCompile>
     <ClCompile Include="src\ui\OverlayKeyRenderer.cpp">
       <Filter>src\ui</Filter>
     </ClCompile>
@@ -141,6 +144,9 @@
       <Filter>src\ui</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\OverlayContentRenderer.h">
+      <Filter>src\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\OverlayFontAtlas.h">
       <Filter>src\ui</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\OverlayKeyRenderer.h">

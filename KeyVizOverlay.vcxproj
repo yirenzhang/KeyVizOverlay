@@ -150,6 +150,7 @@
     <ClCompile Include="src\rendering\D3D11Renderer.cpp" />
     <ClCompile Include="src\ui\KeyboardLayoutPresets.cpp" />
     <ClCompile Include="src\ui\OverlayContentRenderer.cpp" />
+    <ClCompile Include="src\ui\OverlayFontAtlas.cpp" />
     <ClCompile Include="src\ui\OverlayKeyRenderer.cpp" />
     <ClCompile Include="src\ui\OverlayUILayout.cpp" />
     <ClCompile Include="src\ui\OverlayPanelMetrics.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="src\rendering\D3D11Renderer.h" />
     <ClInclude Include="src\ui\KeyboardLayoutPresets.h" />
     <ClInclude Include="src\ui\OverlayContentRenderer.h" />
+    <ClInclude Include="src\ui\OverlayFontAtlas.h" />
     <ClInclude Include="src\ui\OverlayKeyRenderer.h" />
     <ClInclude Include="src\ui\OverlayUILayout.h" />
     <ClInclude Include="src\ui\OverlayPanelMetrics.h" />

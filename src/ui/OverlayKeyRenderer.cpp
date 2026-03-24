@@ -362,8 +362,7 @@ void DrawKeyboardCluster(
     const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
     float sectionInset,
     float sectionGap,
-    const char* sectionLabel,
-    const char* footerText)
+    const char* sectionLabel)
 {
     ImGui::Indent(sectionInset);
     ImGui::TextUnformatted(sectionLabel);
@@ -463,8 +462,6 @@ void DrawKeyboardCluster(
 
     ImGui::SetCursorScreenPos(clusterOrigin);
     ImGui::Dummy(ImVec2(clusterWidthMax, clusterContentHeight));
-    ImGui::Spacing();
-    ImGui::TextDisabled(footerText);
     ImGui::Unindent(sectionInset);
 }
 } // namespace keyviz

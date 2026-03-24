@@ -22,12 +22,19 @@ private:
     static void MoveWindowThunk(void* context, int deltaX, int deltaY);
     static void WindowDragStateThunk(void* context, bool active);
 
-
     bool Initialize();
+    bool InitializeWindowAndInput(HINSTANCE instance, const wchar_t*& failureReason);
+    bool InitializeRendererAndImGui(const wchar_t*& failureReason);
+    bool InitializeImGuiContextAndStyle();
+    bool InitializeImGuiBackends(const wchar_t*& failureReason);
+    void ConfigureUiBindings();
+    void CaptureInitialClientSize();
+    void ShutdownImGui();
+    void CollectPreferredClientSize();
+    bool ApplyPendingResize();
     void Shutdown();
     void Tick();
     void UpdateRendererSize();
-
 
     Win32Window m_window;
     D3D11Renderer m_renderer;

@@ -88,17 +88,15 @@ KeyRowSet GetRowsForPreset(int presetIndex)
     return KeyRowSet{ kKeyboardRows.data(), kKeyboardRows.size() };
 }
 
-void ApplyLayoutPresetDefaults(int presetIndex, bool& showDebugPanel, float& layoutScale)
+void ApplyLayoutPresetDefaults(int presetIndex, float& layoutScale)
 {
-    // 仅同步当前已实现的参数，避免预设切换没有反馈。
+    // 当前预设仅同步键位大小参数。
     switch (presetIndex)
     {
     case 0:
-        showDebugPanel = false;
         layoutScale = 1.0f;
         break;
     case 1:
-        showDebugPanel = true;
         layoutScale = 1.0f;
         break;
     default:

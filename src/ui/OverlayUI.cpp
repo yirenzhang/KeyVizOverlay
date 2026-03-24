@@ -117,7 +117,6 @@ void OverlayUI::Render(const InputService& inputService)
             m_interactionHandlers,
             m_dragInteractionActive,
             m_layoutPresetIndex,
-            m_showDebugPanel,
             m_layoutScale,
             m_overlayOpacity);
         if (panelResult.layoutPresetChanged || panelResult.layoutScaleChanged)
@@ -145,25 +144,7 @@ void OverlayUI::Render(const InputService& inputService)
         uiConfig,
         context->metrics,
         context->rowSet,
-        m_keyGlowEffects,
-        m_showDebugPanel);
-}
-
-void OverlayUI::DrawKeyboardVisualizer(const InputService& inputService)
-{
-    const OverlayUIConfig& uiConfig = GetOverlayUIConfig();
-    const OverlayRenderContext& context = GetRenderContext();
-    DrawOverlayKeyboardVisualizer(inputService, uiConfig, context.metrics, context.rowSet, m_keyGlowEffects);
-}
-
-void OverlayUI::SetShowDebugPanel(bool show)
-{
-    if (m_showDebugPanel == show)
-    {
-        return;
-    }
-    m_showDebugPanel = show;
-    InvalidateRenderContext();
+        m_keyGlowEffects);
 }
 
 void OverlayUI::SetExitRequestHandler(ExitRequestHandler handler, void* context)
@@ -201,7 +182,6 @@ const OverlayRenderContext& OverlayUI::GetRenderContext() const
     {
         m_renderContextCache = BuildOverlayRenderContext(
             m_layoutScale,
-            m_showDebugPanel,
             m_consoleHidden,
             m_layoutPresetIndex,
             GetOverlayUIConfig());

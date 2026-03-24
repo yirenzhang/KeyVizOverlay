@@ -12,10 +12,7 @@ const OverlayUIConfig& GetOverlayUIConfig()
         value.layoutPresetLabel = "Layout preset";
         value.opacityLabel = "Opacity";
         value.keySizeLabel = "Key size";
-        value.debugHintText = "Hold a tracked key to animate the glow.";
-        value.debugTodoText = "TODO: Expand to the full keyboard layout later.";
         value.keyStatesLabel = "Key states";
-        value.futurePlanText = "TODO: Full keyboard layout and richer effect layers will be added later.";
         value.sectionGap = 16.0f;
         value.keyStatesSectionInset = 16.0f;
         value.layoutComboWidth = 164.0f;
@@ -37,8 +34,6 @@ OverlayPanelMetricsConfig BuildOverlayPanelMetricsConfig(const OverlayUIConfig& 
     metricsConfig.layoutLabel = config.layoutPresetLabel;
     metricsConfig.opacityLabel = config.opacityLabel;
     metricsConfig.keySizeLabel = config.keySizeLabel;
-    metricsConfig.debugHintText = config.debugHintText;
-    metricsConfig.footerText = config.futurePlanText;
     metricsConfig.keyStatesSectionInset = config.keyStatesSectionInset;
     metricsConfig.layoutComboWidth = config.layoutComboWidth;
     metricsConfig.opacitySliderWidth = config.opacitySliderWidth;

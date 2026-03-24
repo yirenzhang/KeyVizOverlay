@@ -25,12 +25,10 @@ public:
     void Shutdown();
     void Update(float deltaSeconds, const InputService& inputService);
     void Render(const InputService& inputService);
-    void DrawKeyboardVisualizer(const InputService& inputService);
 
     ImVec2 GetPreferredWindowSize() const;
     float GetOverlayOpacity() const;
     bool IsConsoleHidden() const;
-    void SetShowDebugPanel(bool show);
     void SetExitRequestHandler(ExitRequestHandler handler, void* context = nullptr);
     void SetDragRequestHandler(DragRequestHandler handler, void* context = nullptr);
     void SetDragStateRequestHandler(DragStateRequestHandler handler, void* context = nullptr);
@@ -41,7 +39,6 @@ private:
     void InvalidateRenderContext();
     void UpdateConsoleCommandState(const InputService& inputService);
 
-    bool m_showDebugPanel = true;
     float m_layoutScale = 1.0f;
     float m_overlayOpacity = 0.86f;
     int m_layoutPresetIndex = 0;

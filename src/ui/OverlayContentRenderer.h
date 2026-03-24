@@ -23,18 +23,10 @@ OverlayPanelRenderResult RenderOverlayConsole(
     const char* const* layoutPresetLabels,
     int layoutPresetCount);
 
-void DrawOverlayKeyboardVisualizer(
-    const InputService& inputService,
-    const OverlayUIConfig& uiConfig,
-    const LayoutMetrics& metrics,
-    KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects);
-
 void RenderOverlayKeyStates(
     const InputService& inputService,
     const OverlayUIConfig& uiConfig,
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
-    bool showDebugPanel);
+    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects);
 } // namespace keyviz
