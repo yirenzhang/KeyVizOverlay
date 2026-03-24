@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <string>
+
 #include "OverlayPanelRenderer.h"
 #include "OverlayUICallbacks.h"
 
@@ -15,5 +18,9 @@ void ApplyOverlayPanelResult(
     bool& customEditMode,
     int& customPaletteIndex,
     int& customTargetRowIndex,
-    bool& customIncludeMouse);
+    bool& customIncludeMouse,
+    int& customPresetFileIndex,
+    char* customPresetNameBuffer,
+    std::size_t customPresetNameBufferSize,
+    std::string& customStatusMessage);
 } // namespace keyviz

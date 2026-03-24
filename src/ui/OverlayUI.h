@@ -1,6 +1,8 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <string>
 #include <unordered_map>
 
 #include "effects/GlowEffect.h"
@@ -52,13 +54,16 @@ private:
         bool customIncludeMouse = true;
         int customPaletteIndex = 0;
         int customTargetRowIndex = 0;
+        int customPresetFileIndex = 0;
+        std::array<char, 64> customPresetNameBuffer{};
+        std::string customStatusMessage{};
         OverlayKeyLayoutEditState keyLayoutEditState{};
     };
 
     const OverlayRenderContext& GetRenderContext() const;
     void InvalidateRenderContext();
     void UpdateConsoleCommandState(const InputService& inputService);
-    OverlayPanelCustomLayoutState BuildCustomPanelState() const;
+    OverlayPanelCustomLayoutState BuildCustomPanelState();
 
     OverlayRenderState m_renderState{};
     OverlayInteractionState m_interactionState{};

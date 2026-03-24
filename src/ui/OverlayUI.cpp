@@ -1,6 +1,7 @@
 #include "OverlayUI.h"
 
 #include <algorithm>
+#include <cstdio>
 
 #include "OverlayContentRenderer.h"
 #include "OverlayRenderContext.h"
@@ -33,6 +34,9 @@ void OverlayUI::Initialize()
     m_interactionState.customIncludeMouse = GetCustomIncludeMouse();
     m_interactionState.customPaletteIndex = 0;
     m_interactionState.customTargetRowIndex = 0;
+    m_interactionState.customPresetFileIndex = 0;
+    std::snprintf(m_interactionState.customPresetNameBuffer.data(), m_interactionState.customPresetNameBuffer.size(), "%s", "new_preset");
+    m_interactionState.customStatusMessage.clear();
     m_interactionState.keyLayoutEditState = OverlayKeyLayoutEditState{};
     InvalidateRenderContext();
 }
@@ -103,11 +107,18 @@ void OverlayUI::Render(const InputService& inputService)
             m_interactionState.customEditMode,
             m_interactionState.customPaletteIndex,
             m_interactionState.customTargetRowIndex,
-            m_interactionState.customIncludeMouse);
+            m_interactionState.customIncludeMouse,
+            m_interactionState.customPresetFileIndex,
+            m_interactionState.customPresetNameBuffer.data(),
+            m_interactionState.customPresetNameBuffer.size(),
+            m_interactionState.customStatusMessage);
         if (panelResult.layoutPresetChanged || panelResult.layoutScaleChanged ||
             panelResult.customAddRequested || panelResult.customResetRequested ||
             panelResult.customAddRowRequested || panelResult.customRemoveRowRequested ||
-            panelResult.customIncludeMouseChanged || panelResult.customImportRequested)
+            panelResult.customIncludeMouseChanged ||
+            panelResult.customLoadPresetRequested || panelResult.customSaveAsRequested ||
+            panelResult.customDuplicateRequested || panelResult.customRenameRequested ||
+            panelResult.customDeleteRequested)
         {
             InvalidateRenderContext();
             // 关键参数变化后在同一帧刷新上下文，避免后续窗口尺寸和内容不同步。
@@ -178,7 +189,7 @@ void OverlayUI::SetLayoutScale(float scale)
     InvalidateRenderContext();
 }
 
-OverlayPanelCustomLayoutState OverlayUI::BuildCustomPanelState() const
+OverlayPanelCustomLayoutState OverlayUI::BuildCustomPanelState()
 {
     OverlayPanelCustomLayoutState state{};
     state.isCustomPreset = IsCustomLayoutPreset(m_renderState.layoutPresetIndex);
@@ -201,6 +212,22 @@ OverlayPanelCustomLayoutState OverlayUI::BuildCustomPanelState() const
         {
             state.targetRowIndex = (std::clamp)(state.targetRowIndex, 0, state.rowCount - 1);
         }
+
+        state.presetFileCount = GetCustomPresetFileCount();
+        state.presetFileLabels = GetCustomPresetFileLabels();
+        if (state.presetFileCount > 0)
+        {
+            state.presetFileIndex = (std::clamp)(m_interactionState.customPresetFileIndex, 0, state.presetFileCount - 1);
+            m_interactionState.customPresetFileIndex = state.presetFileIndex;
+        }
+        else
+        {
+            state.presetFileIndex = 0;
+            m_interactionState.customPresetFileIndex = 0;
+        }
+        state.presetNameBuffer = m_interactionState.customPresetNameBuffer.data();
+        state.presetNameBufferSize = static_cast<int>(m_interactionState.customPresetNameBuffer.size());
+        state.statusMessage = m_interactionState.customStatusMessage.c_str();
     }
     return state;
 }

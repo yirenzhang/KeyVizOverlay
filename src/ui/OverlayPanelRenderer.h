@@ -39,8 +39,12 @@ struct OverlayPanelRenderResult
     bool customIncludeMouseChanged = false;
     bool customIncludeMouse = true;
 
-    bool customExportRequested = false;
-    bool customImportRequested = false;
+    int customPresetFileIndex = 0;
+    bool customLoadPresetRequested = false;
+    bool customSaveAsRequested = false;
+    bool customDuplicateRequested = false;
+    bool customRenameRequested = false;
+    bool customDeleteRequested = false;
 
     bool customResetRequested = false;
 };
@@ -56,6 +60,12 @@ struct OverlayPanelCustomLayoutState
     const char* const* rowLabels = nullptr;
     int rowCount = 0;
     bool includeMouse = true;
+    const char* const* presetFileLabels = nullptr;
+    int presetFileCount = 0;
+    int presetFileIndex = 0;
+    char* presetNameBuffer = nullptr;
+    int presetNameBufferSize = 0;
+    const char* statusMessage = nullptr;
 };
 
 OverlayPanelRenderResult RenderOverlayPanelControls(

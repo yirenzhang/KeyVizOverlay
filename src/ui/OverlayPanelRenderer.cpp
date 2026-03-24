@@ -25,6 +25,7 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     result.customTargetRowIndex = customLayoutState.targetRowIndex;
     result.customRemoveRowIndex = customLayoutState.targetRowIndex;
     result.customIncludeMouse = customLayoutState.includeMouse;
+    result.customPresetFileIndex = customLayoutState.presetFileIndex;
 
     ImGui::TextUnformatted(config.title);
     ImGui::SameLine();
@@ -157,19 +158,68 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
             result.customRemoveRowRequested = true;
         }
 
-        if (ImGui::Button("Export custom"))
-        {
-            result.customExportRequested = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Import custom"))
-        {
-            result.customImportRequested = true;
-        }
-        ImGui::SameLine();
         if (ImGui::Button("Reset custom preset"))
         {
             result.customResetRequested = true;
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Preset files");
+
+        if (customLayoutState.presetFileLabels != nullptr && customLayoutState.presetFileCount > 0)
+        {
+            ImGui::SetNextItemWidth(config.layoutComboWidth * metrics.scale);
+            ImGui::Combo(
+                "##CustomPresetFileList",
+                &result.customPresetFileIndex,
+                customLayoutState.presetFileLabels,
+                customLayoutState.presetFileCount);
+        }
+        else
+        {
+            ImGui::TextUnformatted("No preset files in config/presets");
+        }
+
+        if (customLayoutState.presetNameBuffer != nullptr && customLayoutState.presetNameBufferSize > 1)
+        {
+            ImGui::SetNextItemWidth(config.layoutComboWidth * metrics.scale);
+            ImGui::InputText(
+                "##CustomPresetName",
+                customLayoutState.presetNameBuffer,
+                static_cast<std::size_t>(customLayoutState.presetNameBufferSize));
+        }
+
+        if (ImGui::Button("Load selected"))
+        {
+            result.customLoadPresetRequested = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Save As"))
+        {
+            result.customSaveAsRequested = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Duplicate"))
+        {
+            result.customDuplicateRequested = true;
+        }
+
+        if (ImGui::Button("Rename"))
+        {
+            result.customRenameRequested = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Delete"))
+        {
+            result.customDeleteRequested = true;
+        }
+
+        if (customLayoutState.statusMessage != nullptr && customLayoutState.statusMessage[0] != '\0')
+        {
+            ImGui::Spacing();
+            ImGui::TextWrapped("%s", customLayoutState.statusMessage);
         }
     }
 

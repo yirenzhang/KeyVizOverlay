@@ -38,8 +38,8 @@ float MeasureCustomEditorHeight(const LayoutMetrics&)
     const ImGuiStyle& style = ImGui::GetStyle();
     const float textHeight = ImGui::GetTextLineHeight();
     const float frameHeight = ImGui::GetFrameHeight();
-    // 自定义编辑区包含 1 行标题 + 1 行勾选 + 2 行下拉 + 3 行按钮，预留额外间距避免裁切。
-    return textHeight + frameHeight * 6.0f + style.ItemSpacing.y * 12.0f;
+    // 自定义编辑区包含编辑操作 + 文件列表 + 文件名输入 + 多组按钮，预留额外间距避免裁切。
+    return textHeight * 2.0f + frameHeight * 10.0f + style.ItemSpacing.y * 18.0f;
 }
 
 }

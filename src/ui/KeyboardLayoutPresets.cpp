@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -77,6 +78,7 @@ constexpr std::array<KeyRow, 4> kKeyboardMouseRows =
 constexpr int kCustomPresetIndex = 2;
 constexpr const char* kCustomLayoutRelativePath = "config/custom_layout.txt";
 constexpr const char* kCustomLayoutExchangeRelativePath = "config/custom_layout_exchange.txt";
+constexpr const char* kCustomPresetsDirectoryRelativePath = "config/presets";
 constexpr std::size_t kMaxCustomRowKeyCount = 12U;
 constexpr std::size_t kMinCustomRowCount = 1U;
 constexpr std::size_t kMaxCustomRowCount = 8U;
@@ -118,6 +120,9 @@ struct CustomLayoutStorage
     std::vector<std::string> rowLabelStorage{};
     std::vector<const char*> rowLabelPtrs{};
     std::array<const char*, sizeof(kPaletteKeys) / sizeof(kPaletteKeys[0])> paletteLabels{};
+    std::vector<std::filesystem::path> presetFilePaths{};
+    std::vector<std::string> presetFileLabels{};
+    std::vector<const char*> presetFileLabelPtrs{};
     bool includeMouse = true;
     bool initialized = false;
 };
@@ -241,6 +246,89 @@ std::filesystem::path ResolveRuntimeStoragePath(const char* path, const char* fa
     return GetRuntimePath(candidatePath);
 }
 
+std::filesystem::path GetCustomPresetsDirectoryPath()
+{
+    return ResolveRuntimeStoragePath(nullptr, kCustomPresetsDirectoryRelativePath);
+}
+
+void EnsureCustomPresetsDirectoryExists()
+{
+    std::error_code errorCode;
+    std::filesystem::create_directories(GetCustomPresetsDirectoryPath(), errorCode);
+}
+
+std::string SanitizeFileStem(const char* fileStem)
+{
+    std::string value = fileStem != nullptr ? fileStem : "";
+    std::string result;
+    result.reserve(value.size());
+
+    for (const unsigned char ch : value)
+    {
+        if (std::isalnum(ch) || ch == '_' || ch == '-')
+        {
+            result.push_back(static_cast<char>(ch));
+        }
+        else if (ch == ' ' || ch == '.')
+        {
+            result.push_back('_');
+        }
+    }
+
+    while (!result.empty() && result.back() == '_')
+    {
+        result.pop_back();
+    }
+    while (!result.empty() && result.front() == '_')
+    {
+        result.erase(result.begin());
+    }
+    return result;
+}
+
+std::filesystem::path BuildPresetPathFromStem(const std::string& stem)
+{
+    return GetCustomPresetsDirectoryPath() / (stem + ".txt");
+}
+
+void RefreshPresetFileList(CustomLayoutStorage& storage)
+{
+    EnsureCustomPresetsDirectoryExists();
+    storage.presetFilePaths.clear();
+    storage.presetFileLabels.clear();
+    storage.presetFileLabelPtrs.clear();
+
+    std::error_code errorCode;
+    for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(GetCustomPresetsDirectoryPath(), errorCode))
+    {
+        if (errorCode || !entry.is_regular_file())
+        {
+            continue;
+        }
+        if (entry.path().extension() != ".txt")
+        {
+            continue;
+        }
+        storage.presetFilePaths.push_back(entry.path());
+    }
+
+    std::sort(
+        storage.presetFilePaths.begin(),
+        storage.presetFilePaths.end(),
+        [](const std::filesystem::path& a, const std::filesystem::path& b)
+        {
+            return a.filename().string() < b.filename().string();
+        });
+
+    storage.presetFileLabels.reserve(storage.presetFilePaths.size());
+    storage.presetFileLabelPtrs.reserve(storage.presetFilePaths.size());
+    for (const std::filesystem::path& path : storage.presetFilePaths)
+    {
+        storage.presetFileLabels.push_back(path.stem().string());
+        storage.presetFileLabelPtrs.push_back(storage.presetFileLabels.back().c_str());
+    }
+}
+
 void SaveCustomLayout(const CustomLayoutStorage& storage)
 {
     const std::filesystem::path runtimePath = ResolveRuntimeStoragePath(nullptr, kCustomLayoutRelativePath);
@@ -350,6 +438,7 @@ void EnsureCustomStorageInitialized(CustomLayoutStorage& storage)
     {
         storage.paletteLabels[i] = kPaletteKeys[i].label;
     }
+    RefreshPresetFileList(storage);
     storage.initialized = true;
 }
 
@@ -549,6 +638,157 @@ bool ImportCustomLayout(const char* path)
     }
 
     SaveCustomLayout(storage);
+    return true;
+}
+
+int GetCustomPresetFileCount()
+{
+    CustomLayoutStorage& storage = GetCustomStorage();
+    EnsureCustomStorageInitialized(storage);
+    RefreshPresetFileList(storage);
+    return static_cast<int>(storage.presetFilePaths.size());
+}
+
+const char* const* GetCustomPresetFileLabels()
+{
+    CustomLayoutStorage& storage = GetCustomStorage();
+    EnsureCustomStorageInitialized(storage);
+    RefreshPresetFileList(storage);
+    return storage.presetFileLabelPtrs.empty() ? nullptr : storage.presetFileLabelPtrs.data();
+}
+
+bool LoadCustomPresetFileByIndex(int index)
+{
+    CustomLayoutStorage& storage = GetCustomStorage();
+    EnsureCustomStorageInitialized(storage);
+    RefreshPresetFileList(storage);
+    if (index < 0 || static_cast<std::size_t>(index) >= storage.presetFilePaths.size())
+    {
+        return false;
+    }
+
+    const std::filesystem::path sourcePath = storage.presetFilePaths[static_cast<std::size_t>(index)];
+    if (!LoadCustomLayoutFromPath(storage, sourcePath.string().c_str()))
+    {
+        return false;
+    }
+    SaveCustomLayout(storage);
+    return true;
+}
+
+bool SaveCustomPresetAs(const char* fileStem)
+{
+    CustomLayoutStorage& storage = GetCustomStorage();
+    EnsureCustomStorageInitialized(storage);
+    const std::string stem = SanitizeFileStem(fileStem);
+    if (stem.empty())
+    {
+        return false;
+    }
+
+    const std::filesystem::path targetPath = BuildPresetPathFromStem(stem);
+    if (!SaveCustomLayoutToPath(storage, targetPath.string().c_str()))
+    {
+        return false;
+    }
+
+    RefreshPresetFileList(storage);
+    return true;
+}
+
+bool DuplicateCustomPresetFile(int index, const char* targetFileStem)
+{
+    CustomLayoutStorage& storage = GetCustomStorage();
+    EnsureCustomStorageInitialized(storage);
+    RefreshPresetFileList(storage);
+    if (index < 0 || static_cast<std::size_t>(index) >= storage.presetFilePaths.size())
+    {
+        return false;
+    }
+
+    std::string stem = SanitizeFileStem(targetFileStem);
+    if (stem.empty())
+    {
+        stem = storage.presetFilePaths[static_cast<std::size_t>(index)].stem().string() + "_copy";
+    }
+
+    std::filesystem::path targetPath = BuildPresetPathFromStem(stem);
+    if (std::filesystem::exists(targetPath))
+    {
+        int suffix = 2;
+        while (std::filesystem::exists(targetPath))
+        {
+            targetPath = BuildPresetPathFromStem(stem + "_" + std::to_string(suffix));
+            ++suffix;
+        }
+    }
+
+    std::error_code errorCode;
+    std::filesystem::copy_file(
+        storage.presetFilePaths[static_cast<std::size_t>(index)],
+        targetPath,
+        std::filesystem::copy_options::none,
+        errorCode);
+    if (errorCode)
+    {
+        return false;
+    }
+
+    RefreshPresetFileList(storage);
+    return true;
+}
+
+bool RenameCustomPresetFile(int index, const char* targetFileStem)
+{
+    CustomLayoutStorage& storage = GetCustomStorage();
+    EnsureCustomStorageInitialized(storage);
+    RefreshPresetFileList(storage);
+    if (index < 0 || static_cast<std::size_t>(index) >= storage.presetFilePaths.size())
+    {
+        return false;
+    }
+
+    const std::string stem = SanitizeFileStem(targetFileStem);
+    if (stem.empty())
+    {
+        return false;
+    }
+
+    const std::filesystem::path targetPath = BuildPresetPathFromStem(stem);
+    if (std::filesystem::exists(targetPath))
+    {
+        return false;
+    }
+
+    std::error_code errorCode;
+    std::filesystem::rename(storage.presetFilePaths[static_cast<std::size_t>(index)], targetPath, errorCode);
+    if (errorCode)
+    {
+        return false;
+    }
+
+    RefreshPresetFileList(storage);
+    return true;
+}
+
+bool DeleteCustomPresetFile(int index)
+{
+    CustomLayoutStorage& storage = GetCustomStorage();
+    EnsureCustomStorageInitialized(storage);
+    RefreshPresetFileList(storage);
+    if (index < 0 || static_cast<std::size_t>(index) >= storage.presetFilePaths.size())
+    {
+        return false;
+    }
+
+    std::error_code errorCode;
+    const bool removed = std::filesystem::remove(storage.presetFilePaths[static_cast<std::size_t>(index)], errorCode);
+    if (errorCode || !removed)
+    {
+        return false;
+    }
+
+    RefreshPresetFileList(storage);
     return true;
 }
 
