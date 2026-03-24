@@ -1,6 +1,9 @@
 #include "OverlayFontAtlas.h"
 
 #include <array>
+#include <string>
+
+#include "util/AppPaths.h"
 
 namespace keyviz
 {
@@ -11,7 +14,7 @@ void BuildOverlayFontAtlas(ImGuiIO& io)
     {
         12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f
     };
-    constexpr const char* kPixelFontPath = "assets/fonts/PixeloidMono.ttf";
+    const std::string pixelFontPath = GetRuntimePathUtf8("assets/fonts/PixeloidMono.ttf");
 
     io.Fonts->Clear();
     ImFont* defaultFont = io.Fonts->AddFontDefault();
@@ -24,7 +27,7 @@ void BuildOverlayFontAtlas(ImGuiIO& io)
         config.OversampleH = 1;
         config.OversampleV = 1;
 
-        if (io.Fonts->AddFontFromFileTTF(kPixelFontPath, size, &config) == nullptr)
+        if (io.Fonts->AddFontFromFileTTF(pixelFontPath.c_str(), size, &config) == nullptr)
         {
             // 像素字体缺失时回退默认字体，避免字体表为空导致渲染异常。
             io.Fonts->AddFontDefault(&config);

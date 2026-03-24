@@ -114,6 +114,9 @@
     <ClCompile Include="src\effects\SweepLightEffect.cpp">
       <Filter>src\effects</Filter>
     </ClCompile>
+    <ClCompile Include="src\util\AppPaths.cpp">
+      <Filter>src\util</Filter>
+    </ClCompile>
     <ClCompile Include="external\imgui\imgui.cpp">
       <Filter>external\imgui</Filter>
     </ClCompile>
@@ -202,6 +205,9 @@
     </ClInclude>
     <ClInclude Include="src\effects\SweepLightEffect.h">
       <Filter>src\effects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\AppPaths.h">
+      <Filter>src\util</Filter>
     </ClInclude>
     <ClInclude Include="src\util\Constants.h">
       <Filter>src\util</Filter>

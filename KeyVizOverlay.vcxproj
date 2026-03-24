@@ -165,6 +165,7 @@
     <ClCompile Include="src\input\InputService.cpp" />
     <ClCompile Include="src\effects\GlowEffect.cpp" />
     <ClCompile Include="src\effects\SweepLightEffect.cpp" />
+    <ClCompile Include="src\util\AppPaths.cpp" />
     <ClCompile Include="external\imgui\imgui.cpp" />
     <ClCompile Include="external\imgui\imgui_draw.cpp" />
     <ClCompile Include="external\imgui\imgui_tables.cpp" />
@@ -196,11 +197,19 @@
     <ClInclude Include="src\models\InputEvent.h" />
     <ClInclude Include="src\effects\GlowEffect.h" />
     <ClInclude Include="src\effects\SweepLightEffect.h" />
+    <ClInclude Include="src\util\AppPaths.h" />
     <ClInclude Include="src\util\Constants.h" />
     <ClInclude Include="external\imgui\imgui.h" />
     <ClInclude Include="external\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="external\imgui\backends\imgui_impl_dx11.h" />
   </ItemGroup>
+
+  <Target Name="PrepareRuntimeFiles" AfterTargets="Build">
+    <MakeDir Directories="$(OutDir)assets\fonts;$(OutDir)config;$(OutDir)config\presets" />
+    <Copy SourceFiles="$(ProjectDir)assets\fonts\PixeloidMono.ttf" DestinationFiles="$(OutDir)assets\fonts\PixeloidMono.ttf" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)assets\fonts\README.txt" DestinationFiles="$(OutDir)assets\fonts\README.txt" SkipUnchangedFiles="true" />
+  </Target>
+
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

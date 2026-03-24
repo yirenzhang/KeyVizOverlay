@@ -10,6 +10,8 @@
 
 #include <windows.h>
 
+#include "util/AppPaths.h"
+
 namespace keyviz
 {
 namespace
@@ -73,8 +75,8 @@ constexpr std::array<KeyRow, 4> kKeyboardMouseRows =
 };
 
 constexpr int kCustomPresetIndex = 2;
-constexpr const char* kCustomLayoutFilePath = "config/custom_layout.txt";
-constexpr const char* kCustomLayoutExchangePath = "config/custom_layout_exchange.txt";
+constexpr const char* kCustomLayoutRelativePath = "config/custom_layout.txt";
+constexpr const char* kCustomLayoutExchangeRelativePath = "config/custom_layout_exchange.txt";
 constexpr std::size_t kMaxCustomRowKeyCount = 12U;
 constexpr std::size_t kMinCustomRowCount = 1U;
 constexpr std::size_t kMaxCustomRowCount = 8U;
@@ -224,9 +226,25 @@ bool SaveCustomLayoutToPath(const CustomLayoutStorage& storage, const char* path
     return true;
 }
 
+std::filesystem::path ResolveRuntimeStoragePath(const char* path, const char* fallbackRelativePath)
+{
+    if (path == nullptr || path[0] == '\0')
+    {
+        return GetRuntimePath(fallbackRelativePath);
+    }
+
+    const std::filesystem::path candidatePath(path);
+    if (candidatePath.is_absolute())
+    {
+        return candidatePath;
+    }
+    return GetRuntimePath(candidatePath);
+}
+
 void SaveCustomLayout(const CustomLayoutStorage& storage)
 {
-    SaveCustomLayoutToPath(storage, kCustomLayoutFilePath);
+    const std::filesystem::path runtimePath = ResolveRuntimeStoragePath(nullptr, kCustomLayoutRelativePath);
+    SaveCustomLayoutToPath(storage, runtimePath.string().c_str());
 }
 
 bool LoadCustomLayoutFromPath(CustomLayoutStorage& storage, const char* path)
@@ -326,7 +344,8 @@ void EnsureCustomStorageInitialized(CustomLayoutStorage& storage)
     }
 
     ResetCustomLayoutStorage(storage);
-    LoadCustomLayoutFromPath(storage, kCustomLayoutFilePath);
+    const std::filesystem::path runtimePath = ResolveRuntimeStoragePath(nullptr, kCustomLayoutRelativePath);
+    LoadCustomLayoutFromPath(storage, runtimePath.string().c_str());
     for (std::size_t i = 0; i < storage.paletteLabels.size(); ++i)
     {
         storage.paletteLabels[i] = kPaletteKeys[i].label;
@@ -515,16 +534,16 @@ bool ExportCustomLayout(const char* path)
 {
     CustomLayoutStorage& storage = GetCustomStorage();
     EnsureCustomStorageInitialized(storage);
-    const char* targetPath = (path != nullptr && path[0] != '\0') ? path : kCustomLayoutExchangePath;
-    return SaveCustomLayoutToPath(storage, targetPath);
+    const std::filesystem::path targetPath = ResolveRuntimeStoragePath(path, kCustomLayoutExchangeRelativePath);
+    return SaveCustomLayoutToPath(storage, targetPath.string().c_str());
 }
 
 bool ImportCustomLayout(const char* path)
 {
     CustomLayoutStorage& storage = GetCustomStorage();
     EnsureCustomStorageInitialized(storage);
-    const char* sourcePath = (path != nullptr && path[0] != '\0') ? path : kCustomLayoutExchangePath;
-    if (!LoadCustomLayoutFromPath(storage, sourcePath))
+    const std::filesystem::path sourcePath = ResolveRuntimeStoragePath(path, kCustomLayoutExchangeRelativePath);
+    if (!LoadCustomLayoutFromPath(storage, sourcePath.string().c_str()))
     {
         return false;
     }

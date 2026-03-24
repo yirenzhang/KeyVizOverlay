@@ -94,7 +94,7 @@ FontSelection SelectNearestFont(float targetSize)
     const std::size_t keyFontCount = kOverlayFontSizes.size();
     if (fontCount <= keyFontCount)
     {
-        return FontSelection{ atlas->Fonts[fontCount - 1U] };
+        return FontSelection{ atlas->Fonts[static_cast<int>(fontCount - 1U)] };
     }
     const std::size_t keyFontStart = fontCount - keyFontCount;
 
@@ -111,7 +111,7 @@ FontSelection SelectNearestFont(float targetSize)
     }
 
     const std::size_t atlasIndex = keyFontStart + bestIndex;
-    return FontSelection{ atlas->Fonts[atlasIndex] };
+    return FontSelection{ atlas->Fonts[static_cast<int>(atlasIndex)] };
 }
 
 bool IsMouseVisualRow(const KeyBinding* keys, std::size_t keyCount)
