@@ -125,6 +125,7 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
         ImGui::TextUnformatted("5. Show console: type \"showshow\" continuously.");
         ImGui::Spacing();
         ImGui::TextUnformatted("Tip: hide/show commands are typed without spaces.");
+        ImGui::TextUnformatted("Tip: run KeyViz Overlay as Administrator when gaming.");
         ImGui::Spacing();
         if (ImGui::Button("Close"))
         {

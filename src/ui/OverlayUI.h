@@ -62,6 +62,7 @@ private:
 
     const OverlayRenderContext& GetRenderContext() const;
     void InvalidateRenderContext();
+    void SetConsoleHidden(bool hidden);
     void UpdateConsoleCommandState(const InputService& inputService);
     OverlayPanelCustomLayoutState BuildCustomPanelState();
 

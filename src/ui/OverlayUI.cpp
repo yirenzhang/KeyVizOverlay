@@ -1,6 +1,7 @@
 #include "OverlayUI.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include "OverlayContentRenderer.h"
@@ -251,20 +252,38 @@ void OverlayUI::InvalidateRenderContext()
     m_renderContextDirty = true;
 }
 
+void OverlayUI::SetConsoleHidden(bool hidden)
+{
+    if (m_renderState.consoleHidden == hidden)
+    {
+        return;
+    }
+
+    const OverlayRenderContext previousContext = GetRenderContext();
+    m_renderState.consoleHidden = hidden;
+    InvalidateRenderContext();
+    const OverlayRenderContext currentContext = GetRenderContext();
+
+    const int deltaX = static_cast<int>(std::lround(previousContext.keyStatesWindowPos.x - currentContext.keyStatesWindowPos.x));
+    const int deltaY = static_cast<int>(std::lround(previousContext.keyStatesWindowPos.y - currentContext.keyStatesWindowPos.y));
+    if ((deltaX != 0 || deltaY != 0) && m_interactionHandlers.dragRequestHandler != nullptr)
+    {
+        m_interactionHandlers.dragRequestHandler(m_interactionHandlers.dragRequestContext, deltaX, deltaY);
+    }
+}
+
 void OverlayUI::UpdateConsoleCommandState(const InputService& inputService)
 {
     const OverlayConsoleCommandAction action = m_consoleCommandTracker.Update(inputService);
     if (action == OverlayConsoleCommandAction::HideConsole && !m_renderState.consoleHidden)
     {
-        m_renderState.consoleHidden = true;
-        InvalidateRenderContext();
+        SetConsoleHidden(true);
         return;
     }
 
     if (action == OverlayConsoleCommandAction::ShowConsole && m_renderState.consoleHidden)
     {
-        m_renderState.consoleHidden = false;
-        InvalidateRenderContext();
+        SetConsoleHidden(false);
     }
 }
 } // namespace keyviz
