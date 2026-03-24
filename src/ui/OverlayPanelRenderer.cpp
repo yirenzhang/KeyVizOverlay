@@ -12,13 +12,19 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     int layoutPresetIndex,
     const char* const* layoutPresetLabels,
     int layoutPresetCount,
-    bool dragInteractionActive)
+    bool dragInteractionActive,
+    const OverlayPanelCustomLayoutState& customLayoutState)
 {
     OverlayPanelRenderResult result{};
     result.layoutPresetIndex = layoutPresetIndex;
     result.overlayOpacity = overlayOpacity;
     result.layoutScale = layoutScale;
     result.dragInteractionActive = dragInteractionActive;
+    result.customEditMode = customLayoutState.editMode;
+    result.customPaletteIndex = customLayoutState.paletteIndex;
+    result.customTargetRowIndex = customLayoutState.targetRowIndex;
+    result.customRemoveRowIndex = customLayoutState.targetRowIndex;
+    result.customIncludeMouse = customLayoutState.includeMouse;
 
     ImGui::TextUnformatted(config.title);
     ImGui::SameLine();
@@ -93,6 +99,79 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
         result.layoutScaleChanged = true;
     }
     ImGui::EndGroup();
+
+    if (customLayoutState.isCustomPreset)
+    {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Custom preset editor");
+
+        bool editMode = result.customEditMode;
+        if (ImGui::Checkbox("Enable key drag editing", &editMode))
+        {
+            result.customEditMode = editMode;
+            result.customEditModeChanged = true;
+        }
+
+        if (customLayoutState.paletteLabels != nullptr && customLayoutState.paletteCount > 0)
+        {
+            ImGui::SetNextItemWidth(config.layoutComboWidth * metrics.scale);
+            ImGui::Combo(
+                "##CustomKeyPalette",
+                &result.customPaletteIndex,
+                customLayoutState.paletteLabels,
+                customLayoutState.paletteCount);
+        }
+
+        if (customLayoutState.rowLabels != nullptr && customLayoutState.rowCount > 0)
+        {
+            ImGui::SetNextItemWidth(config.layoutComboWidth * metrics.scale);
+            ImGui::Combo(
+                "##CustomTargetRow",
+                &result.customTargetRowIndex,
+                customLayoutState.rowLabels,
+                customLayoutState.rowCount);
+            result.customRemoveRowIndex = result.customTargetRowIndex;
+        }
+
+        bool includeMouse = result.customIncludeMouse;
+        if (ImGui::Checkbox("Include mouse visual", &includeMouse))
+        {
+            result.customIncludeMouse = includeMouse;
+            result.customIncludeMouseChanged = true;
+        }
+
+        if (ImGui::Button("Add key to row"))
+        {
+            result.customAddRequested = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Add row"))
+        {
+            result.customAddRowRequested = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Delete row"))
+        {
+            result.customRemoveRowRequested = true;
+        }
+
+        if (ImGui::Button("Export custom"))
+        {
+            result.customExportRequested = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Import custom"))
+        {
+            result.customImportRequested = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset custom preset"))
+        {
+            result.customResetRequested = true;
+        }
+    }
 
     return result;
 }

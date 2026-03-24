@@ -36,5 +36,6 @@ float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics);
 OverlayWindowSizes ComputeOverlayWindowSizes(
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
-    const OverlayPanelMetricsConfig& config);
+    const OverlayPanelMetricsConfig& config,
+    bool showCustomLayoutEditor);
 } // namespace keyviz

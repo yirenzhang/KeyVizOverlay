@@ -24,8 +24,36 @@ struct KeyRowSet
     std::size_t count = 0;
 };
 
+struct CustomLayoutEditCommand
+{
+    bool moveRequested = false;
+    int fromRow = -1;
+    int fromIndex = -1;
+    int toRow = -1;
+    int toIndex = -1;
+
+    bool removeRequested = false;
+    int removeRow = -1;
+    int removeIndex = -1;
+};
+
 int GetLayoutPresetCount();
 const char* const* GetLayoutPresetLabels();
 KeyRowSet GetRowsForPreset(int presetIndex);
 void ApplyLayoutPresetDefaults(int presetIndex, float& layoutScale);
+bool IsCustomLayoutPreset(int presetIndex);
+
+int GetCustomEditableRowCount();
+const char* const* GetCustomEditableRowLabels();
+int GetCustomPaletteKeyCount();
+const char* const* GetCustomPaletteKeyLabels();
+bool AddCustomKeyByPaletteIndex(int paletteIndex, int rowIndex);
+bool AddCustomRow();
+bool RemoveCustomRow(int rowIndex);
+bool GetCustomIncludeMouse();
+void SetCustomIncludeMouse(bool includeMouse);
+bool ExportCustomLayout(const char* path);
+bool ImportCustomLayout(const char* path);
+void ApplyCustomLayoutEditCommand(const CustomLayoutEditCommand& command);
+void ResetCustomLayoutPreset();
 } // namespace keyviz

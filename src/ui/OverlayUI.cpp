@@ -1,4 +1,7 @@
 #include "OverlayUI.h"
+
+#include <algorithm>
+
 #include "OverlayContentRenderer.h"
 #include "OverlayRenderContext.h"
 #include "OverlayStateUpdater.h"
@@ -11,61 +14,38 @@ namespace keyviz
 {
 namespace
 {
-constexpr std::size_t kCommandBufferLimit = 24U;
-constexpr const char* kHideCommand = "hidehide";
-constexpr const char* kShowCommand = "showshow";
 constexpr const char* kConsoleWindowTitle = "KeyViz Console";
 constexpr const char* kKeyStatesWindowTitle = "Key states";
-
-bool EndsWithCommand(const std::string& text, const char* suffix)
-{
-    const std::size_t suffixLength = std::char_traits<char>::length(suffix);
-    if (text.size() < suffixLength)
-    {
-        return false;
-    }
-
-    return text.compare(text.size() - suffixLength, suffixLength, suffix) == 0;
-}
-
-void AppendCommandLetter(const InputService& inputService, std::uint32_t keyCode, char letter, std::string& commandBuffer)
-{
-    if (!inputService.WasPressedThisFrame(keyCode))
-    {
-        return;
-    }
-
-    commandBuffer.push_back(letter);
-    if (commandBuffer.size() > kCommandBufferLimit)
-    {
-        commandBuffer.erase(0, commandBuffer.size() - kCommandBufferLimit);
-    }
-}
 }
 
 void OverlayUI::Initialize()
 {
     m_keyGlowEffects.clear();
     // 历史配置中可能残留已移除预设索引，这里统一回落到默认预设。
-    if (m_layoutPresetIndex < 0 || m_layoutPresetIndex >= GetLayoutPresetCount())
+    if (m_renderState.layoutPresetIndex < 0 || m_renderState.layoutPresetIndex >= GetLayoutPresetCount())
     {
-        m_layoutPresetIndex = 0;
+        m_renderState.layoutPresetIndex = 0;
     }
-    m_consoleHidden = false;
-    m_consoleCommandBuffer.clear();
-    m_dragInteractionActive = false;
+    m_renderState.consoleHidden = false;
+    m_consoleCommandTracker.Reset();
+    m_interactionState.dragInteractionActive = false;
+    m_interactionState.customEditMode = false;
+    m_interactionState.customIncludeMouse = GetCustomIncludeMouse();
+    m_interactionState.customPaletteIndex = 0;
+    m_interactionState.customTargetRowIndex = 0;
+    m_interactionState.keyLayoutEditState = OverlayKeyLayoutEditState{};
     InvalidateRenderContext();
 }
 
 void OverlayUI::Shutdown()
 {
     m_keyGlowEffects.clear();
-    m_consoleCommandBuffer.clear();
+    m_consoleCommandTracker.Reset();
 }
 
 void OverlayUI::Update(float deltaSeconds, const InputService& inputService)
 {
-    const KeyRowSet rowSet = GetRowsForPreset(m_layoutPresetIndex);
+    const KeyRowSet rowSet = GetRowsForPreset(m_renderState.layoutPresetIndex);
     UpdateKeyGlowStates(deltaSeconds, inputService, rowSet, m_keyGlowEffects);
     UpdateConsoleCommandState(inputService);
 }
@@ -77,19 +57,19 @@ ImVec2 OverlayUI::GetPreferredWindowSize() const
 
 float OverlayUI::GetOverlayOpacity() const
 {
-    return m_overlayOpacity;
+    return m_renderState.overlayOpacity;
 }
 
 bool OverlayUI::IsConsoleHidden() const
 {
-    return m_consoleHidden;
+    return m_renderState.consoleHidden;
 }
 
 void OverlayUI::Render(const InputService& inputService)
 {
     const OverlayUIConfig& uiConfig = GetOverlayUIConfig();
     const OverlayRenderContext* context = &GetRenderContext();
-    if (!m_consoleHidden)
+    if (!m_renderState.consoleHidden)
     {
         OverlayWindowConfig consoleWindowConfig{};
         consoleWindowConfig.title = kConsoleWindowTitle;
@@ -106,20 +86,28 @@ void OverlayUI::Render(const InputService& inputService)
         const OverlayPanelRenderResult panelResult = RenderOverlayConsole(
             context->panelConfig,
             context->metrics,
-            m_overlayOpacity,
-            m_layoutScale,
-            m_layoutPresetIndex,
-            m_dragInteractionActive,
+            m_renderState.overlayOpacity,
+            m_renderState.layoutScale,
+            m_renderState.layoutPresetIndex,
+            m_interactionState.dragInteractionActive,
             GetLayoutPresetLabels(),
-            GetLayoutPresetCount());
+            GetLayoutPresetCount(),
+            BuildCustomPanelState());
         ApplyOverlayPanelResult(
             panelResult,
             m_interactionHandlers,
-            m_dragInteractionActive,
-            m_layoutPresetIndex,
-            m_layoutScale,
-            m_overlayOpacity);
-        if (panelResult.layoutPresetChanged || panelResult.layoutScaleChanged)
+            m_interactionState.dragInteractionActive,
+            m_renderState.layoutPresetIndex,
+            m_renderState.layoutScale,
+            m_renderState.overlayOpacity,
+            m_interactionState.customEditMode,
+            m_interactionState.customPaletteIndex,
+            m_interactionState.customTargetRowIndex,
+            m_interactionState.customIncludeMouse);
+        if (panelResult.layoutPresetChanged || panelResult.layoutScaleChanged ||
+            panelResult.customAddRequested || panelResult.customResetRequested ||
+            panelResult.customAddRowRequested || panelResult.customRemoveRowRequested ||
+            panelResult.customIncludeMouseChanged || panelResult.customImportRequested)
         {
             InvalidateRenderContext();
             // 关键参数变化后在同一帧刷新上下文，避免后续窗口尺寸和内容不同步。
@@ -131,7 +119,7 @@ void OverlayUI::Render(const InputService& inputService)
     keyStatesWindowConfig.title = kKeyStatesWindowTitle;
     keyStatesWindowConfig.position = context->keyStatesWindowPos;
     keyStatesWindowConfig.preferredSize = context->windowSizes.keyStatesSize;
-    keyStatesWindowConfig.overlayOpacity = m_overlayOpacity;
+    keyStatesWindowConfig.overlayOpacity = m_renderState.overlayOpacity;
     keyStatesWindowConfig.windowFlags = GetOverlayWindowFlags();
     OverlayWindowScope keyStatesWindowScope(keyStatesWindowConfig);
     if (!keyStatesWindowScope.IsContentVisible())
@@ -139,12 +127,26 @@ void OverlayUI::Render(const InputService& inputService)
         return;
     }
 
+    m_interactionState.keyLayoutEditState.enabled =
+        m_interactionState.customEditMode && IsCustomLayoutPreset(m_renderState.layoutPresetIndex);
+    if (!m_interactionState.keyLayoutEditState.enabled)
+    {
+        m_interactionState.keyLayoutEditState.dragFromRow = -1;
+        m_interactionState.keyLayoutEditState.dragFromIndex = -1;
+    }
     RenderOverlayKeyStates(
         inputService,
         uiConfig,
         context->metrics,
         context->rowSet,
-        m_keyGlowEffects);
+        m_keyGlowEffects,
+        &m_interactionState.keyLayoutEditState);
+    if (m_interactionState.keyLayoutEditState.command.moveRequested ||
+        m_interactionState.keyLayoutEditState.command.removeRequested)
+    {
+        ApplyCustomLayoutEditCommand(m_interactionState.keyLayoutEditState.command);
+        InvalidateRenderContext();
+    }
 }
 
 void OverlayUI::SetExitRequestHandler(ExitRequestHandler handler, void* context)
@@ -168,12 +170,39 @@ void OverlayUI::SetDragStateRequestHandler(DragStateRequestHandler handler, void
 void OverlayUI::SetLayoutScale(float scale)
 {
     const float clampedScale = ClampLayoutScale(scale);
-    if (m_layoutScale == clampedScale)
+    if (m_renderState.layoutScale == clampedScale)
     {
         return;
     }
-    m_layoutScale = clampedScale;
+    m_renderState.layoutScale = clampedScale;
     InvalidateRenderContext();
+}
+
+OverlayPanelCustomLayoutState OverlayUI::BuildCustomPanelState() const
+{
+    OverlayPanelCustomLayoutState state{};
+    state.isCustomPreset = IsCustomLayoutPreset(m_renderState.layoutPresetIndex);
+    state.editMode = m_interactionState.customEditMode;
+    state.paletteIndex = m_interactionState.customPaletteIndex;
+    state.targetRowIndex = m_interactionState.customTargetRowIndex;
+    state.includeMouse = m_interactionState.customIncludeMouse;
+    if (state.isCustomPreset)
+    {
+        state.includeMouse = GetCustomIncludeMouse();
+        state.paletteLabels = GetCustomPaletteKeyLabels();
+        state.paletteCount = GetCustomPaletteKeyCount();
+        state.rowLabels = GetCustomEditableRowLabels();
+        state.rowCount = GetCustomEditableRowCount();
+        if (state.paletteCount > 0)
+        {
+            state.paletteIndex = (std::clamp)(state.paletteIndex, 0, state.paletteCount - 1);
+        }
+        if (state.rowCount > 0)
+        {
+            state.targetRowIndex = (std::clamp)(state.targetRowIndex, 0, state.rowCount - 1);
+        }
+    }
+    return state;
 }
 
 const OverlayRenderContext& OverlayUI::GetRenderContext() const
@@ -181,9 +210,9 @@ const OverlayRenderContext& OverlayUI::GetRenderContext() const
     if (m_renderContextDirty)
     {
         m_renderContextCache = BuildOverlayRenderContext(
-            m_layoutScale,
-            m_consoleHidden,
-            m_layoutPresetIndex,
+            m_renderState.layoutScale,
+            m_renderState.consoleHidden,
+            m_renderState.layoutPresetIndex,
             GetOverlayUIConfig());
         m_renderContextDirty = false;
     }
@@ -197,64 +226,18 @@ void OverlayUI::InvalidateRenderContext()
 
 void OverlayUI::UpdateConsoleCommandState(const InputService& inputService)
 {
-    bool hasLetterPressedThisFrame = false;
-    bool hasNonCommandLetterPressedThisFrame = false;
-    for (std::uint32_t keyCode = 'A'; keyCode <= 'Z'; ++keyCode)
+    const OverlayConsoleCommandAction action = m_consoleCommandTracker.Update(inputService);
+    if (action == OverlayConsoleCommandAction::HideConsole && !m_renderState.consoleHidden)
     {
-        if (!inputService.WasPressedThisFrame(keyCode))
-        {
-            continue;
-        }
-
-        hasLetterPressedThisFrame = true;
-        const char letter = static_cast<char>(keyCode + ('a' - 'A'));
-        const bool isCommandLetter = letter == 'h' || letter == 'i' || letter == 'd' ||
-            letter == 'e' || letter == 's' || letter == 'o' || letter == 'w';
-        if (!isCommandLetter)
-        {
-            hasNonCommandLetterPressedThisFrame = true;
-            break;
-        }
-    }
-
-    if (hasNonCommandLetterPressedThisFrame)
-    {
-        m_consoleCommandBuffer.clear();
+        m_renderState.consoleHidden = true;
+        InvalidateRenderContext();
         return;
     }
 
-    if (!hasLetterPressedThisFrame)
+    if (action == OverlayConsoleCommandAction::ShowConsole && m_renderState.consoleHidden)
     {
-        return;
-    }
-
-    AppendCommandLetter(inputService, 'H', 'h', m_consoleCommandBuffer);
-    AppendCommandLetter(inputService, 'I', 'i', m_consoleCommandBuffer);
-    AppendCommandLetter(inputService, 'D', 'd', m_consoleCommandBuffer);
-    AppendCommandLetter(inputService, 'E', 'e', m_consoleCommandBuffer);
-    AppendCommandLetter(inputService, 'S', 's', m_consoleCommandBuffer);
-    AppendCommandLetter(inputService, 'O', 'o', m_consoleCommandBuffer);
-    AppendCommandLetter(inputService, 'W', 'w', m_consoleCommandBuffer);
-
-    if (EndsWithCommand(m_consoleCommandBuffer, kHideCommand))
-    {
-        if (!m_consoleHidden)
-        {
-            m_consoleHidden = true;
-            InvalidateRenderContext();
-        }
-        m_consoleCommandBuffer.clear();
-        return;
-    }
-
-    if (EndsWithCommand(m_consoleCommandBuffer, kShowCommand))
-    {
-        if (m_consoleHidden)
-        {
-            m_consoleHidden = false;
-            InvalidateRenderContext();
-        }
-        m_consoleCommandBuffer.clear();
+        m_renderState.consoleHidden = false;
+        InvalidateRenderContext();
     }
 }
 } // namespace keyviz

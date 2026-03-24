@@ -11,7 +11,11 @@ void ApplyOverlayPanelResult(
     bool& dragInteractionActive,
     int& layoutPresetIndex,
     float& layoutScale,
-    float& overlayOpacity)
+    float& overlayOpacity,
+    bool& customEditMode,
+    int& customPaletteIndex,
+    int& customTargetRowIndex,
+    bool& customIncludeMouse)
 {
     dragInteractionActive = panelResult.dragInteractionActive;
     if (panelResult.dragStateChanged && handlers.dragStateRequestHandler != nullptr)
@@ -34,6 +38,42 @@ void ApplyOverlayPanelResult(
     if (panelResult.overlayOpacityChanged)
     {
         overlayOpacity = panelResult.overlayOpacity;
+    }
+    if (panelResult.customEditModeChanged)
+    {
+        customEditMode = panelResult.customEditMode;
+    }
+    customPaletteIndex = panelResult.customPaletteIndex;
+    customTargetRowIndex = panelResult.customTargetRowIndex;
+    if (panelResult.customIncludeMouseChanged)
+    {
+        customIncludeMouse = panelResult.customIncludeMouse;
+        SetCustomIncludeMouse(customIncludeMouse);
+    }
+    if (panelResult.customAddRequested)
+    {
+        AddCustomKeyByPaletteIndex(customPaletteIndex, customTargetRowIndex);
+    }
+    if (panelResult.customAddRowRequested)
+    {
+        AddCustomRow();
+    }
+    if (panelResult.customRemoveRowRequested)
+    {
+        RemoveCustomRow(panelResult.customRemoveRowIndex);
+    }
+    if (panelResult.customExportRequested)
+    {
+        ExportCustomLayout(nullptr);
+    }
+    if (panelResult.customImportRequested)
+    {
+        ImportCustomLayout(nullptr);
+        customIncludeMouse = GetCustomIncludeMouse();
+    }
+    if (panelResult.customResetRequested)
+    {
+        ResetCustomLayoutPreset();
     }
     if (panelResult.requestExit && handlers.exitRequestHandler != nullptr)
     {

@@ -11,5 +11,9 @@ void ApplyOverlayPanelResult(
     bool& dragInteractionActive,
     int& layoutPresetIndex,
     float& layoutScale,
-    float& overlayOpacity);
+    float& overlayOpacity,
+    bool& customEditMode,
+    int& customPaletteIndex,
+    int& customTargetRowIndex,
+    bool& customIncludeMouse);
 } // namespace keyviz

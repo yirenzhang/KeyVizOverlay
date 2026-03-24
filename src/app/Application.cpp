@@ -290,30 +290,46 @@ bool Application::ApplyPendingResize()
     return true;
 }
 
+void Application::UpdateOverlayState(float deltaSeconds)
+{
+    m_inputService.Update(deltaSeconds);
+    m_ui.Update(deltaSeconds, m_inputService);
+    m_window.SetClickThrough(m_ui.IsConsoleHidden());
+    m_windowDragActive = false;
+}
+
+void Application::BeginImGuiFrame()
+{
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+}
+
+void Application::RenderUiFrame()
+{
+    m_ui.Render(m_inputService);
+    ImGui::Render();
+}
+
+void Application::PresentFrame()
+{
+    const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    m_renderer.BeginFrame(clearColor);
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    m_renderer.EndFrame();
+    m_inputService.ClearFrameFlags();
+}
+
 void Application::Tick()
 {
     const auto now = std::chrono::steady_clock::now();
     const float deltaSeconds = std::chrono::duration<float>(now - m_lastFrameTime).count();
     m_lastFrameTime = now;
 
-    m_inputService.Update(deltaSeconds);
-    m_ui.Update(deltaSeconds, m_inputService);
-    m_window.SetClickThrough(m_ui.IsConsoleHidden());
-
-    m_windowDragActive = false;
-
-    ImGui_ImplDX11_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-
-    m_ui.Render(m_inputService);
-    ImGui::Render();
-
-    const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    m_renderer.BeginFrame(clearColor);
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-    m_renderer.EndFrame();
-    m_inputService.ClearFrameFlags();
+    UpdateOverlayState(deltaSeconds);
+    BeginImGuiFrame();
+    RenderUiFrame();
+    PresentFrame();
     UpdateRendererSize();
 }
 

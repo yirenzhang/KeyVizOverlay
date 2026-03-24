@@ -30,8 +30,8 @@ bool IsMouseVisualRow(const KeyRow& row)
 {
     return row.keyCount == 3 &&
         row.keys[0].keyCode == VK_LBUTTON &&
-        row.keys[1].keyCode == VK_RBUTTON &&
-        row.keys[2].keyCode == VK_MBUTTON;
+        row.keys[1].keyCode == VK_MBUTTON &&
+        row.keys[2].keyCode == VK_RBUTTON;
 }
 
 float ComputeKeyboardRowsHeight(std::size_t rowCount, const LayoutMetrics& metrics)

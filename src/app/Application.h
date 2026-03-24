@@ -32,6 +32,10 @@ private:
     void ShutdownImGui();
     void CollectPreferredClientSize();
     bool ApplyPendingResize();
+    void UpdateOverlayState(float deltaSeconds);
+    void BeginImGuiFrame();
+    void RenderUiFrame();
+    void PresentFrame();
     void Shutdown();
     void Tick();
     void UpdateRendererSize();

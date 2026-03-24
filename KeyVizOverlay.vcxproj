@@ -149,6 +149,7 @@
     <ClCompile Include="src\platform\Win32Window.cpp" />
     <ClCompile Include="src\rendering\D3D11Renderer.cpp" />
     <ClCompile Include="src\ui\KeyboardLayoutPresets.cpp" />
+    <ClCompile Include="src\ui\OverlayConsoleCommandTracker.cpp" />
     <ClCompile Include="src\ui\OverlayContentRenderer.cpp" />
     <ClCompile Include="src\ui\OverlayFontAtlas.cpp" />
     <ClCompile Include="src\ui\OverlayKeyRenderer.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="src\platform\Win32Window.h" />
     <ClInclude Include="src\rendering\D3D11Renderer.h" />
     <ClInclude Include="src\ui\KeyboardLayoutPresets.h" />
+    <ClInclude Include="src\ui\OverlayConsoleCommandTracker.h" />
     <ClInclude Include="src\ui\OverlayContentRenderer.h" />
     <ClInclude Include="src\ui\OverlayFontAtlas.h" />
     <ClInclude Include="src\ui\OverlayKeyRenderer.h" />
