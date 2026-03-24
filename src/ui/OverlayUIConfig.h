@@ -9,6 +9,7 @@ struct OverlayUIConfig
 {
     const char* overlayTitle = nullptr;
     const char* dragButtonLabel = nullptr;
+    const char* aboutButtonLabel = nullptr;
     const char* exitButtonLabel = nullptr;
     const char* layoutPresetLabel = nullptr;
     const char* opacityLabel = nullptr;

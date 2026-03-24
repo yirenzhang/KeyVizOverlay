@@ -53,12 +53,50 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     }
 
     ImGui::SameLine();
+    const float aboutButtonWidth = MeasurePanelButtonWidth(config.aboutButtonLabel, metrics);
     const float exitButtonWidth = MeasurePanelButtonWidth(config.exitButtonLabel, metrics);
-    const float exitButtonX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - exitButtonWidth;
-    ImGui::SetCursorPosX(exitButtonX > ImGui::GetCursorPosX() ? exitButtonX : ImGui::GetCursorPosX());
+    const float trailingButtonsWidth = aboutButtonWidth + ImGui::GetStyle().ItemSpacing.x + exitButtonWidth;
+    const float trailingButtonsX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - trailingButtonsWidth;
+    ImGui::SetCursorPosX(trailingButtonsX > ImGui::GetCursorPosX() ? trailingButtonsX : ImGui::GetCursorPosX());
+    if (ImGui::Button(config.aboutButtonLabel, ImVec2(aboutButtonWidth, 0.0f)))
+    {
+        ImGui::OpenPopup("About KeyViz");
+    }
+
+    ImGui::SameLine();
     if (ImGui::Button(config.exitButtonLabel, ImVec2(exitButtonWidth, 0.0f)))
     {
         result.requestExit = true;
+    }
+
+    if (ImGui::BeginPopupModal("About KeyViz", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::TextUnformatted("Version 0.1.0");
+        ImGui::Separator();
+        ImGui::TextUnformatted("Yiren");
+        ImGui::TextUnformatted("2211051@mail.nankai.edu.cn");
+        ImGui::TextUnformatted("github.com/yirenzhang");
+        ImGui::Spacing();
+        if (ImGui::Button("Copy email"))
+        {
+            ImGui::SetClipboardText("2211051@mail.nankai.edu.cn");
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Copy GitHub"))
+        {
+            ImGui::SetClipboardText("github.com/yirenzhang");
+        }
+        ImGui::Spacing();
+        if (ImGui::Button("Close"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
     }
 
     ImGui::Spacing();
