@@ -10,6 +10,7 @@ struct OverlayPanelMetricsConfig
 {
     const char* title = nullptr;
     const char* dragButtonLabel = nullptr;
+    const char* helpButtonLabel = nullptr;
     const char* aboutButtonLabel = nullptr;
     const char* exitButtonLabel = nullptr;
     const char* layoutLabel = nullptr;

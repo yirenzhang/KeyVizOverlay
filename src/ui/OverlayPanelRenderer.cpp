@@ -53,11 +53,21 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     }
 
     ImGui::SameLine();
+    const float helpButtonWidth = MeasurePanelButtonWidth(config.helpButtonLabel, metrics);
     const float aboutButtonWidth = MeasurePanelButtonWidth(config.aboutButtonLabel, metrics);
     const float exitButtonWidth = MeasurePanelButtonWidth(config.exitButtonLabel, metrics);
-    const float trailingButtonsWidth = aboutButtonWidth + ImGui::GetStyle().ItemSpacing.x + exitButtonWidth;
+    const float trailingButtonsWidth =
+        helpButtonWidth + ImGui::GetStyle().ItemSpacing.x +
+        aboutButtonWidth + ImGui::GetStyle().ItemSpacing.x +
+        exitButtonWidth;
     const float trailingButtonsX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - trailingButtonsWidth;
     ImGui::SetCursorPosX(trailingButtonsX > ImGui::GetCursorPosX() ? trailingButtonsX : ImGui::GetCursorPosX());
+    if (ImGui::Button(config.helpButtonLabel, ImVec2(helpButtonWidth, 0.0f)))
+    {
+        ImGui::OpenPopup("Help");
+    }
+
+    ImGui::SameLine();
     if (ImGui::Button(config.aboutButtonLabel, ImVec2(aboutButtonWidth, 0.0f)))
     {
         ImGui::OpenPopup("About KeyViz");
@@ -91,6 +101,30 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
         {
             ImGui::SetClipboardText("github.com/yirenzhang");
         }
+        ImGui::Spacing();
+        if (ImGui::Button("Close"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (ImGui::BeginPopupModal("Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::TextUnformatted("Quick Guide");
+        ImGui::Separator();
+        ImGui::TextUnformatted("1. Drag to move: hold \"Drag to move\" and move mouse.");
+        ImGui::TextUnformatted("2. Opacity: only affects the Key States window.");
+        ImGui::TextUnformatted("3. Key size: scales keyboard and mouse visuals.");
+        ImGui::TextUnformatted("4. Hide console: type \"hidehide\" continuously.");
+        ImGui::TextUnformatted("5. Show console: type \"showshow\" continuously.");
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Tip: hide/show commands are typed without spaces.");
         ImGui::Spacing();
         if (ImGui::Button("Close"))
         {
