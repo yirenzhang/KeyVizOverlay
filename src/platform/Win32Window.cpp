@@ -208,11 +208,6 @@ HWND Win32Window::GetHwnd() const
     return m_hwnd;
 }
 
-HINSTANCE Win32Window::GetInstance() const
-{
-    return m_instance;
-}
-
 LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     Win32Window* window = nullptr;

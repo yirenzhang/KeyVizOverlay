@@ -60,11 +60,6 @@ ImVec2 OverlayUI::GetPreferredWindowSize() const
     return GetRenderContext().preferredSize;
 }
 
-float OverlayUI::GetOverlayOpacity() const
-{
-    return m_renderState.overlayOpacity;
-}
-
 bool OverlayUI::IsConsoleHidden() const
 {
     return m_renderState.consoleHidden;
@@ -177,17 +172,6 @@ void OverlayUI::SetDragStateRequestHandler(DragStateRequestHandler handler, void
 {
     m_interactionHandlers.dragStateRequestHandler = handler;
     m_interactionHandlers.dragStateRequestContext = context;
-}
-
-void OverlayUI::SetLayoutScale(float scale)
-{
-    const float clampedScale = ClampLayoutScale(scale);
-    if (m_renderState.layoutScale == clampedScale)
-    {
-        return;
-    }
-    m_renderState.layoutScale = clampedScale;
-    InvalidateRenderContext();
 }
 
 OverlayPanelCustomLayoutState OverlayUI::BuildCustomPanelState()

@@ -52,10 +52,6 @@ bool AddCustomRow();
 bool RemoveCustomRow(int rowIndex);
 bool GetCustomIncludeMouse();
 void SetCustomIncludeMouse(bool includeMouse);
-// 兼容旧流程：建议优先使用 presets 文件管理接口。
-bool ExportCustomLayout(const char* path);
-// 兼容旧流程：建议优先使用 presets 文件管理接口。
-bool ImportCustomLayout(const char* path);
 int GetCustomPresetFileCount();
 const char* const* GetCustomPresetFileLabels();
 bool LoadCustomPresetFileByIndex(int index);

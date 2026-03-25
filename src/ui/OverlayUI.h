@@ -31,12 +31,10 @@ public:
     void Render(const InputService& inputService);
 
     ImVec2 GetPreferredWindowSize() const;
-    float GetOverlayOpacity() const;
     bool IsConsoleHidden() const;
     void SetExitRequestHandler(ExitRequestHandler handler, void* context = nullptr);
     void SetDragRequestHandler(DragRequestHandler handler, void* context = nullptr);
     void SetDragStateRequestHandler(DragStateRequestHandler handler, void* context = nullptr);
-    void SetLayoutScale(float scale);
 
 private:
     struct OverlayRenderState

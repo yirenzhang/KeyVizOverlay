@@ -77,7 +77,6 @@ constexpr std::array<KeyRow, 4> kKeyboardMouseRows =
 
 constexpr int kCustomPresetIndex = 2;
 constexpr const char* kCustomLayoutRelativePath = "config/custom_layout.txt";
-constexpr const char* kCustomLayoutExchangeRelativePath = "config/custom_layout_exchange.txt";
 constexpr const char* kCustomPresetsDirectoryRelativePath = "config/presets";
 constexpr std::size_t kMaxCustomRowKeyCount = 12U;
 constexpr std::size_t kMinCustomRowCount = 1U;
@@ -617,28 +616,6 @@ void SetCustomIncludeMouse(bool includeMouse)
 
     storage.includeMouse = includeMouse;
     SaveCustomLayout(storage);
-}
-
-bool ExportCustomLayout(const char* path)
-{
-    CustomLayoutStorage& storage = GetCustomStorage();
-    EnsureCustomStorageInitialized(storage);
-    const std::filesystem::path targetPath = ResolveRuntimeStoragePath(path, kCustomLayoutExchangeRelativePath);
-    return SaveCustomLayoutToPath(storage, targetPath.string().c_str());
-}
-
-bool ImportCustomLayout(const char* path)
-{
-    CustomLayoutStorage& storage = GetCustomStorage();
-    EnsureCustomStorageInitialized(storage);
-    const std::filesystem::path sourcePath = ResolveRuntimeStoragePath(path, kCustomLayoutExchangeRelativePath);
-    if (!LoadCustomLayoutFromPath(storage, sourcePath.string().c_str()))
-    {
-        return false;
-    }
-
-    SaveCustomLayout(storage);
-    return true;
 }
 
 int GetCustomPresetFileCount()

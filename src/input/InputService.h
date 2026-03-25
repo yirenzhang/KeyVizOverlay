@@ -30,7 +30,6 @@ public:
 
 private:
     std::unordered_map<std::uint32_t, KeyState> m_keyStates;
-    std::vector<InputEvent> m_recentEvents;
     std::vector<std::uint8_t> m_rawInputBuffer;
 };
 }
