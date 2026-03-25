@@ -10,11 +10,10 @@ float MeasureHeaderRowWidth(const LayoutMetrics& metrics, const OverlayPanelMetr
 {
     const ImGuiStyle& style = ImGui::GetStyle();
     const float titleWidth = ImGui::CalcTextSize(config.title).x;
-    const float dragButtonWidth = MeasurePanelButtonWidth(config.dragButtonLabel, metrics);
     const float helpButtonWidth = MeasurePanelButtonWidth(config.helpButtonLabel, metrics);
     const float aboutButtonWidth = MeasurePanelButtonWidth(config.aboutButtonLabel, metrics);
     const float exitButtonWidth = MeasurePanelButtonWidth(config.exitButtonLabel, metrics);
-    return titleWidth + style.ItemSpacing.x + dragButtonWidth + style.ItemSpacing.x + helpButtonWidth + style.ItemSpacing.x + aboutButtonWidth + style.ItemSpacing.x + exitButtonWidth;
+    return titleWidth + style.ItemSpacing.x + helpButtonWidth + style.ItemSpacing.x + aboutButtonWidth + style.ItemSpacing.x + exitButtonWidth;
 }
 
 float MeasureControlsRowWidth(const LayoutMetrics& metrics, const OverlayPanelMetricsConfig& config)

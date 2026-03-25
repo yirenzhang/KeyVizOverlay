@@ -47,7 +47,28 @@ void Application::MoveWindowThunk(void* context, int deltaX, int deltaY)
         return;
     }
 
-    application->m_window.MoveBy(deltaX, deltaY);
+    (void)deltaX;
+    (void)deltaY;
+    if (!application->m_windowDragActive)
+    {
+        return;
+    }
+
+    POINT cursorPos{};
+    if (!GetCursorPos(&cursorPos))
+    {
+        return;
+    }
+
+    const int moveX = cursorPos.x - application->m_lastDragCursorPos.x;
+    const int moveY = cursorPos.y - application->m_lastDragCursorPos.y;
+    application->m_lastDragCursorPos = cursorPos;
+    if (moveX == 0 && moveY == 0)
+    {
+        return;
+    }
+
+    application->m_window.MoveBy(moveX, moveY);
 }
 
 void Application::WindowDragStateThunk(void* context, bool active)
@@ -59,6 +80,10 @@ void Application::WindowDragStateThunk(void* context, bool active)
     }
 
     application->m_windowDragActive = active;
+    if (active)
+    {
+        GetCursorPos(&application->m_lastDragCursorPos);
+    }
 }
 
 int Application::Run()
@@ -295,7 +320,6 @@ void Application::UpdateOverlayState(float deltaSeconds)
     m_inputService.Update(deltaSeconds);
     m_ui.Update(deltaSeconds, m_inputService);
     m_window.SetClickThrough(m_ui.IsConsoleHidden());
-    m_windowDragActive = false;
 }
 
 void Application::BeginImGuiFrame()

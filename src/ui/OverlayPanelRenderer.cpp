@@ -28,29 +28,6 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     result.customPresetFileIndex = customLayoutState.presetFileIndex;
 
     ImGui::TextUnformatted(config.title);
-    ImGui::SameLine();
-
-    const float dragButtonWidth = MeasurePanelButtonWidth(config.dragButtonLabel, metrics);
-    ImGui::Button(config.dragButtonLabel, ImVec2(dragButtonWidth, metrics.dragBarHeight));
-
-    const bool dragPressed = ImGui::IsItemActive() && ImGui::IsMouseDown(ImGuiMouseButton_Left);
-    if (dragPressed != result.dragInteractionActive)
-    {
-        result.dragInteractionActive = dragPressed;
-        result.dragStateChanged = true;
-    }
-
-    if (result.dragInteractionActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
-    {
-        const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
-        if (mouseDelta.x != 0.0f || mouseDelta.y != 0.0f)
-        {
-            result.hasDragDelta = true;
-            result.dragDeltaX = static_cast<int>(mouseDelta.x);
-            result.dragDeltaY = static_cast<int>(mouseDelta.y);
-        }
-        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
-    }
 
     ImGui::SameLine();
     const float helpButtonWidth = MeasurePanelButtonWidth(config.helpButtonLabel, metrics);
@@ -77,6 +54,28 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
     if (ImGui::Button(config.exitButtonLabel, ImVec2(exitButtonWidth, 0.0f)))
     {
         result.requestExit = true;
+    }
+
+    const bool canStartDrag =
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
+        !ImGui::IsAnyItemHovered();
+    if (!result.dragInteractionActive && canStartDrag && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+    {
+        result.dragInteractionActive = true;
+        result.dragStateChanged = true;
+    }
+    else if (result.dragInteractionActive && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    {
+        result.dragInteractionActive = false;
+        result.dragStateChanged = true;
+    }
+
+    if (result.dragInteractionActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+    {
+        result.hasDragDelta = true;
+        result.dragDeltaX = 0;
+        result.dragDeltaY = 0;
+        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
     }
 
     if (ImGui::BeginPopupModal("About KeyViz", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -118,7 +117,7 @@ OverlayPanelRenderResult RenderOverlayPanelControls(
 
         ImGui::TextUnformatted("Quick Guide");
         ImGui::Separator();
-        ImGui::TextUnformatted("1. Drag to move: hold \"Drag to move\" and move mouse.");
+        ImGui::TextUnformatted("1. Drag to move: drag any empty area in console.");
         ImGui::TextUnformatted("2. Opacity: only affects the Key States window.");
         ImGui::TextUnformatted("3. Key size: scales keyboard and mouse visuals.");
         ImGui::TextUnformatted("4. Hide console: type \"hidehide\" continuously.");
