@@ -10,9 +10,10 @@ float MeasureHeaderRowWidth(const LayoutMetrics& metrics, const OverlayPanelMetr
 {
     const ImGuiStyle& style = ImGui::GetStyle();
     const float titleWidth = ImGui::CalcTextSize(config.title).x;
-    const float dragButtonWidth = MeasurePanelButtonWidth(config.dragButtonLabel, metrics);
+    const float helpButtonWidth = MeasurePanelButtonWidth(config.helpButtonLabel, metrics);
+    const float aboutButtonWidth = MeasurePanelButtonWidth(config.aboutButtonLabel, metrics);
     const float exitButtonWidth = MeasurePanelButtonWidth(config.exitButtonLabel, metrics);
-    return titleWidth + style.ItemSpacing.x + dragButtonWidth + style.ItemSpacing.x + exitButtonWidth;
+    return titleWidth + style.ItemSpacing.x + helpButtonWidth + style.ItemSpacing.x + aboutButtonWidth + style.ItemSpacing.x + exitButtonWidth;
 }
 
 float MeasureControlsRowWidth(const LayoutMetrics& metrics, const OverlayPanelMetricsConfig& config)
@@ -33,6 +34,15 @@ float MeasureControlsRowHeight(const LayoutMetrics&)
     return groupHeight + style.ItemSpacing.y + groupHeight;
 }
 
+float MeasureCustomEditorHeight(const LayoutMetrics&)
+{
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float textHeight = ImGui::GetTextLineHeight();
+    const float frameHeight = ImGui::GetFrameHeight();
+    // 自定义编辑区包含编辑操作 + 文件列表 + 文件名输入 + 多组按钮，预留额外间距避免裁切。
+    return textHeight * 2.0f + frameHeight * 10.0f + style.ItemSpacing.y * 18.0f;
+}
+
 }
 
 float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics)
@@ -44,7 +54,8 @@ float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics)
 OverlayWindowSizes ComputeOverlayWindowSizes(
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
-    const OverlayPanelMetricsConfig& config)
+    const OverlayPanelMetricsConfig& config,
+    bool showCustomLayoutEditor)
 {
     const ImGuiStyle& style = ImGui::GetStyle();
     const float headerWidth = MeasureHeaderRowWidth(metrics, config);
@@ -60,6 +71,7 @@ OverlayWindowSizes ComputeOverlayWindowSizes(
 
     const float headerRowHeight = (std::max)(metrics.dragBarHeight, ImGui::GetTextLineHeight());
     const float controlsRowHeight = MeasureControlsRowHeight(metrics);
+    const float customEditorHeight = showCustomLayoutEditor ? MeasureCustomEditorHeight(metrics) : 0.0f;
     const float clusterHeight = MeasureClusterBackgroundHeight(metrics, rowSet);
 
     const float consoleWindowHeight =
@@ -67,6 +79,7 @@ OverlayWindowSizes ComputeOverlayWindowSizes(
         headerRowHeight +
         style.ItemSpacing.y +
         controlsRowHeight +
+        customEditorHeight +
         style.ItemSpacing.y + 1.0f * metrics.scale +
         24.0f * metrics.scale;
 

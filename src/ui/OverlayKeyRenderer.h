@@ -10,6 +10,14 @@
 
 namespace keyviz
 {
+struct OverlayKeyLayoutEditState
+{
+    bool enabled = false;
+    int dragFromRow = -1;
+    int dragFromIndex = -1;
+    CustomLayoutEditCommand command{};
+};
+
 void DrawKeyboardCluster(
     const InputService& inputService,
     KeyRowSet rowSet,
@@ -17,5 +25,6 @@ void DrawKeyboardCluster(
     const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
     float sectionInset,
     float sectionGap,
-    const char* sectionLabel);
+    const char* sectionLabel,
+    OverlayKeyLayoutEditState* editState);
 } // namespace keyviz

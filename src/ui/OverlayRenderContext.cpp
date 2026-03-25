@@ -17,7 +17,8 @@ OverlayRenderContext BuildOverlayRenderContext(
     context.consoleWindowPos = ImVec2(0.0f, 0.0f);
     if (ImGui::GetCurrentContext() == nullptr)
     {
-        const float consoleHeight = consoleHidden ? 0.0f : 120.0f * context.metrics.scale;
+        const float customEditorExtraHeight = IsCustomLayoutPreset(layoutPresetIndex) ? 180.0f * context.metrics.scale : 0.0f;
+        const float consoleHeight = consoleHidden ? 0.0f : (120.0f * context.metrics.scale + customEditorExtraHeight);
         const float windowGap = consoleHidden ? 0.0f : 8.0f * context.metrics.scale;
         context.windowSizes.consoleSize = ImVec2(uiConfig.minimumWindowWidth, consoleHeight);
         context.windowSizes.keyStatesSize = ImVec2(uiConfig.minimumWindowWidth, 220.0f * context.metrics.scale);
@@ -32,7 +33,8 @@ OverlayRenderContext BuildOverlayRenderContext(
     context.windowSizes = ComputeOverlayWindowSizes(
         context.metrics,
         context.rowSet,
-        context.panelConfig);
+        context.panelConfig,
+        IsCustomLayoutPreset(layoutPresetIndex));
     if (consoleHidden)
     {
         context.windowSizes.consoleSize.y = 0.0f;

@@ -1,11 +1,15 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
 
 #include "effects/GlowEffect.h"
 #include "input/InputService.h"
+#include "OverlayConsoleCommandTracker.h"
+#include "OverlayPanelRenderer.h"
+#include "OverlayKeyRenderer.h"
 #include "OverlayUICallbacks.h"
 #include "OverlayRenderContext.h"
 #include "imgui.h"
@@ -27,25 +31,43 @@ public:
     void Render(const InputService& inputService);
 
     ImVec2 GetPreferredWindowSize() const;
-    float GetOverlayOpacity() const;
     bool IsConsoleHidden() const;
     void SetExitRequestHandler(ExitRequestHandler handler, void* context = nullptr);
     void SetDragRequestHandler(DragRequestHandler handler, void* context = nullptr);
     void SetDragStateRequestHandler(DragStateRequestHandler handler, void* context = nullptr);
-    void SetLayoutScale(float scale);
 
 private:
+    struct OverlayRenderState
+    {
+        float layoutScale = 1.0f;
+        float overlayOpacity = 0.86f;
+        int layoutPresetIndex = 0;
+        bool consoleHidden = false;
+    };
+
+    struct OverlayInteractionState
+    {
+        bool dragInteractionActive = false;
+        bool customEditMode = false;
+        bool customIncludeMouse = true;
+        int customPaletteIndex = 0;
+        int customTargetRowIndex = 0;
+        int customPresetFileIndex = 0;
+        std::array<char, 64> customPresetNameBuffer{};
+        std::string customStatusMessage{};
+        OverlayKeyLayoutEditState keyLayoutEditState{};
+    };
+
     const OverlayRenderContext& GetRenderContext() const;
     void InvalidateRenderContext();
+    void SetConsoleHidden(bool hidden);
     void UpdateConsoleCommandState(const InputService& inputService);
+    OverlayPanelCustomLayoutState BuildCustomPanelState();
 
-    float m_layoutScale = 1.0f;
-    float m_overlayOpacity = 0.86f;
-    int m_layoutPresetIndex = 0;
-    bool m_consoleHidden = false;
-    bool m_dragInteractionActive = false;
+    OverlayRenderState m_renderState{};
+    OverlayInteractionState m_interactionState{};
     OverlayUIInteractionHandlers m_interactionHandlers{};
-    std::string m_consoleCommandBuffer{};
+    OverlayConsoleCommandTracker m_consoleCommandTracker{};
     mutable bool m_renderContextDirty = true;
     mutable OverlayRenderContext m_renderContextCache{};
 

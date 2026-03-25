@@ -27,6 +27,23 @@ struct FontSelection
     ImFont* font = nullptr;
 };
 
+struct RowPlacement
+{
+    int rowIndex = -1;
+    float rowY = 0.0f;
+    float rowWidth = 0.0f;
+};
+
+struct KeyEditHitRect
+{
+    int rowIndex = -1;
+    int keyIndex = -1;
+    ImVec2 min{};
+    ImVec2 max{};
+    float centerX = 0.0f;
+    float centerY = 0.0f;
+};
+
 constexpr std::array<float, 6> kOverlayFontSizes =
 {
     12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f
@@ -77,7 +94,7 @@ FontSelection SelectNearestFont(float targetSize)
     const std::size_t keyFontCount = kOverlayFontSizes.size();
     if (fontCount <= keyFontCount)
     {
-        return FontSelection{ atlas->Fonts[fontCount - 1U] };
+        return FontSelection{ atlas->Fonts[static_cast<int>(fontCount - 1U)] };
     }
     const std::size_t keyFontStart = fontCount - keyFontCount;
 
@@ -94,15 +111,26 @@ FontSelection SelectNearestFont(float targetSize)
     }
 
     const std::size_t atlasIndex = keyFontStart + bestIndex;
-    return FontSelection{ atlas->Fonts[atlasIndex] };
+    return FontSelection{ atlas->Fonts[static_cast<int>(atlasIndex)] };
 }
 
 bool IsMouseVisualRow(const KeyBinding* keys, std::size_t keyCount)
 {
     return keyCount == 3 &&
         keys[0].keyCode == VK_LBUTTON &&
-        keys[1].keyCode == VK_RBUTTON &&
-        keys[2].keyCode == VK_MBUTTON;
+        keys[1].keyCode == VK_MBUTTON &&
+        keys[2].keyCode == VK_RBUTTON;
+}
+
+bool IsEditableKeyboardRow(std::size_t rowIndex, const KeyRowSet& rowSet)
+{
+    if (rowIndex >= rowSet.count)
+    {
+        return false;
+    }
+
+    const KeyRow& row = rowSet.rows[rowIndex];
+    return !IsMouseVisualRow(row.keys, row.keyCount);
 }
 
 float ComputeRowsHeight(std::size_t rowCount, const LayoutMetrics& metrics)
@@ -222,8 +250,8 @@ void DrawMouseShape(
     const ImVec2 rightBottomLeft(rightDividerX + lineThickness, bottomY);
 
     const std::uint32_t leftKey = keys[0].keyCode;
-    const std::uint32_t rightKey = keys[1].keyCode;
-    const std::uint32_t middleKey = keys[2].keyCode;
+    const std::uint32_t middleKey = keys[1].keyCode;
+    const std::uint32_t rightKey = keys[2].keyCode;
 
     auto drawButtonRegion = [&](const ImVec2* points, std::uint32_t keyCode) {
         const GlowEffect* glow = FindGlowEffect(keyGlowEffects, keyCode);
@@ -362,14 +390,25 @@ void DrawKeyboardCluster(
     const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
     float sectionInset,
     float sectionGap,
-    const char* sectionLabel)
+    const char* sectionLabel,
+    OverlayKeyLayoutEditState* editState)
 {
+    const bool editEnabled = editState != nullptr && editState->enabled;
+    if (editState != nullptr)
+    {
+        editState->command = CustomLayoutEditCommand{};
+    }
+
     ImGui::Indent(sectionInset);
     ImGui::TextUnformatted(sectionLabel);
     ImGui::Dummy(ImVec2(0.0f, sectionGap * metrics.scale));
 
     std::vector<std::size_t> keyboardRowIndices;
     keyboardRowIndices.reserve(rowSet.count);
+    std::vector<RowPlacement> rowPlacements;
+    rowPlacements.reserve(rowSet.count);
+    std::vector<KeyEditHitRect> keyHitRects;
+    keyHitRects.reserve(64);
     std::size_t mouseRowIndex = static_cast<std::size_t>(-1);
     std::vector<float> rowWidths(rowSet.count, 0.0f);
     float keyboardWidthMax = 0.0f;
@@ -415,7 +454,7 @@ void DrawKeyboardCluster(
         0,
         1.0f * metrics.scale);
 
-    auto drawRow = [&](const KeyBinding* keys, std::size_t keyCount, float rowY, float rowWidth)
+    auto drawRow = [&](const KeyBinding* keys, std::size_t keyCount, int rowIndex, float rowY, float rowWidth)
     {
         const float rowStartX = clusterOrigin.x + (keyboardWidthMax - rowWidth) * 0.5f;
         ImGui::SetCursorScreenPos(ImVec2(rowStartX, clusterOrigin.y + rowY));
@@ -424,12 +463,60 @@ void DrawKeyboardCluster(
         {
             const KeyBinding& binding = keys[i];
             const GlowEffect* glow = FindGlowEffect(keyGlowEffects, binding.keyCode);
+            const float keyWidth = GetKeyVisualWidth(binding, metrics);
+            const ImVec2 keySize(keyWidth, GetKeyVisualHeight(metrics));
+            const ImVec2 keyMin = ImGui::GetCursorScreenPos();
+            const ImVec2 keyMax(keyMin.x + keySize.x, keyMin.y + keySize.y);
 
             const float animationValue = GetKeyAnimationValue(inputService, glow, binding.keyCode);
             const bool wasPressed = inputService.WasPressedThisFrame(binding.keyCode);
+
+            if (editEnabled && IsEditableKeyboardRow(static_cast<std::size_t>(rowIndex), rowSet))
+            {
+                ImGui::PushID(rowIndex * 100 + static_cast<int>(i));
+                ImGui::InvisibleButton("##KeyEditHit", keySize);
+                if (ImGui::IsItemActivated() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                {
+                    editState->dragFromRow = rowIndex;
+                    editState->dragFromIndex = static_cast<int>(i);
+                }
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                {
+                    editState->command.removeRequested = true;
+                    editState->command.removeRow = rowIndex;
+                    editState->command.removeIndex = static_cast<int>(i);
+                }
+                ImGui::PopID();
+                ImGui::SetCursorScreenPos(keyMin);
+            }
+
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
-            DrawKeyCap(binding.label, animationValue, wasPressed, GetKeyVisualWidth(binding, metrics), metrics);
+            DrawKeyCap(binding.label, animationValue, wasPressed, keyWidth, metrics);
             ImGui::PopStyleVar();
+
+            if (editEnabled && IsEditableKeyboardRow(static_cast<std::size_t>(rowIndex), rowSet))
+            {
+                KeyEditHitRect hitRect{};
+                hitRect.rowIndex = rowIndex;
+                hitRect.keyIndex = static_cast<int>(i);
+                hitRect.min = keyMin;
+                hitRect.max = keyMax;
+                hitRect.centerX = (keyMin.x + keyMax.x) * 0.5f;
+                hitRect.centerY = (keyMin.y + keyMax.y) * 0.5f;
+                keyHitRects.push_back(hitRect);
+
+                if (editState->dragFromRow == rowIndex && editState->dragFromIndex == static_cast<int>(i) &&
+                    ImGui::IsMouseDown(ImGuiMouseButton_Left))
+                {
+                    drawList->AddRect(
+                        keyMin,
+                        keyMax,
+                        ImGui::GetColorU32(ImVec4(1.00f, 0.76f, 0.28f, 0.92f)),
+                        0.0f,
+                        0,
+                        (std::max)(1.0f, SnapPixel(2.0f * metrics.scale)));
+                }
+            }
 
             if (i + 1U < keyCount)
             {
@@ -442,10 +529,18 @@ void DrawKeyboardCluster(
     for (std::size_t visualRowIndex = 0; visualRowIndex < keyboardRowIndices.size(); ++visualRowIndex)
     {
         const std::size_t rowIndex = keyboardRowIndices[visualRowIndex];
+        const float rowY = static_cast<float>(visualRowIndex) * rowStepY;
+        RowPlacement placement{};
+        placement.rowIndex = static_cast<int>(rowIndex);
+        placement.rowY = rowY;
+        placement.rowWidth = rowWidths[rowIndex];
+        rowPlacements.push_back(placement);
+
         drawRow(
             rowSet.rows[rowIndex].keys,
             rowSet.rows[rowIndex].keyCount,
-            static_cast<float>(visualRowIndex) * rowStepY,
+            static_cast<int>(rowIndex),
+            rowY,
             rowWidths[rowIndex]);
     }
 
@@ -458,6 +553,112 @@ void DrawKeyboardCluster(
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1.0f);
         DrawMouseShape(inputService, keyGlowEffects, mouseRow.keys, ImVec2(mouseWidth, mouseHeight), metrics);
         ImGui::PopStyleVar();
+    }
+
+    auto computeDropTarget = [&](const ImVec2& mousePos, int& outTargetRow, int& outTargetInsertIndex, float& outPreviewX, float& outRowTopY, float& outRowBottomY) -> bool
+    {
+        if (rowPlacements.empty())
+        {
+            return false;
+        }
+
+        int targetRow = rowPlacements.front().rowIndex;
+        float targetRowY = rowPlacements.front().rowY;
+        float targetRowWidth = rowPlacements.front().rowWidth;
+        float bestRowDistance = FLT_MAX;
+        for (const RowPlacement& placement : rowPlacements)
+        {
+            const float rowCenterY = clusterOrigin.y + placement.rowY + GetKeyVisualHeight(metrics) * 0.5f;
+            const float distance = std::abs(mousePos.y - rowCenterY);
+            if (distance < bestRowDistance)
+            {
+                bestRowDistance = distance;
+                targetRow = placement.rowIndex;
+                targetRowY = placement.rowY;
+                targetRowWidth = placement.rowWidth;
+            }
+        }
+
+        std::vector<KeyEditHitRect> targetRowHits;
+        for (const KeyEditHitRect& hitRect : keyHitRects)
+        {
+            if (hitRect.rowIndex == targetRow)
+            {
+                targetRowHits.push_back(hitRect);
+            }
+        }
+        std::sort(
+            targetRowHits.begin(),
+            targetRowHits.end(),
+            [](const KeyEditHitRect& a, const KeyEditHitRect& b) { return a.centerX < b.centerX; });
+
+        int targetInsertIndex = static_cast<int>(targetRowHits.size());
+        for (std::size_t i = 0; i < targetRowHits.size(); ++i)
+        {
+            if (mousePos.x < targetRowHits[i].centerX)
+            {
+                targetInsertIndex = static_cast<int>(i);
+                break;
+            }
+        }
+
+        float previewX = clusterOrigin.x + (keyboardWidthMax - targetRowWidth) * 0.5f + metrics.keyWidth * 0.5f;
+        if (!targetRowHits.empty())
+        {
+            if (targetInsertIndex <= 0)
+            {
+                previewX = targetRowHits.front().min.x - metrics.keySpacing * 0.5f;
+            }
+            else if (targetInsertIndex >= static_cast<int>(targetRowHits.size()))
+            {
+                previewX = targetRowHits.back().max.x + metrics.keySpacing * 0.5f;
+            }
+            else
+            {
+                previewX = (targetRowHits[targetInsertIndex - 1].max.x + targetRowHits[targetInsertIndex].min.x) * 0.5f;
+            }
+        }
+
+        outTargetRow = targetRow;
+        outTargetInsertIndex = targetInsertIndex;
+        outPreviewX = previewX;
+        outRowTopY = clusterOrigin.y + targetRowY + 1.0f;
+        outRowBottomY = outRowTopY + GetKeyVisualHeight(metrics) - 2.0f;
+        return true;
+    };
+
+    if (editEnabled && editState->dragFromRow >= 0 && editState->dragFromIndex >= 0)
+    {
+        const ImVec2 mousePos = ImGui::GetIO().MousePos;
+        int targetRow = -1;
+        int targetInsertIndex = 0;
+        float previewX = 0.0f;
+        float rowTopY = 0.0f;
+        float rowBottomY = 0.0f;
+        if (computeDropTarget(mousePos, targetRow, targetInsertIndex, previewX, rowTopY, rowBottomY))
+        {
+            const ImVec2 previewTop = SnapVec2(ImVec2(previewX, rowTopY));
+            const ImVec2 previewBottom = SnapVec2(ImVec2(previewX, rowBottomY));
+            const ImU32 previewColor = ImGui::GetColorU32(ImVec4(0.12f, 0.92f, 1.00f, 0.96f));
+            drawList->AddLine(previewTop, previewBottom, previewColor, (std::max)(1.0f, SnapPixel(2.0f * metrics.scale)));
+            drawList->AddCircleFilled(previewTop, (std::max)(1.0f, SnapPixel(2.0f * metrics.scale)), previewColor);
+            drawList->AddCircleFilled(previewBottom, (std::max)(1.0f, SnapPixel(2.0f * metrics.scale)), previewColor);
+        }
+
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        {
+            if (targetRow >= 0 && !(targetRow == editState->dragFromRow && targetInsertIndex == editState->dragFromIndex))
+            {
+                editState->command.moveRequested = true;
+                editState->command.fromRow = editState->dragFromRow;
+                editState->command.fromIndex = editState->dragFromIndex;
+                editState->command.toRow = targetRow;
+                editState->command.toIndex = targetInsertIndex;
+            }
+
+            editState->dragFromRow = -1;
+            editState->dragFromIndex = -1;
+        }
     }
 
     ImGui::SetCursorScreenPos(clusterOrigin);

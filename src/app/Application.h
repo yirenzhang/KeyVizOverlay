@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <windows.h>
 
 #include "input/InputService.h"
 #include "platform/Win32Window.h"
@@ -32,6 +33,10 @@ private:
     void ShutdownImGui();
     void CollectPreferredClientSize();
     bool ApplyPendingResize();
+    void UpdateOverlayState(float deltaSeconds);
+    void BeginImGuiFrame();
+    void RenderUiFrame();
+    void PresentFrame();
     void Shutdown();
     void Tick();
     void UpdateRendererSize();
@@ -44,6 +49,7 @@ private:
     unsigned int m_lastClientWidth = 0;
     unsigned int m_lastClientHeight = 0;
     bool m_windowDragActive = false;
+    POINT m_lastDragCursorPos{};
     bool m_layoutResizePending = true;
     int m_pendingClientWidth = 0;
     int m_pendingClientHeight = 0;

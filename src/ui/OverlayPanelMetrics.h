@@ -9,7 +9,8 @@ namespace keyviz
 struct OverlayPanelMetricsConfig
 {
     const char* title = nullptr;
-    const char* dragButtonLabel = nullptr;
+    const char* helpButtonLabel = nullptr;
+    const char* aboutButtonLabel = nullptr;
     const char* exitButtonLabel = nullptr;
     const char* layoutLabel = nullptr;
     const char* opacityLabel = nullptr;
@@ -36,5 +37,6 @@ float MeasurePanelButtonWidth(const char* label, const LayoutMetrics& metrics);
 OverlayWindowSizes ComputeOverlayWindowSizes(
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
-    const OverlayPanelMetricsConfig& config);
+    const OverlayPanelMetricsConfig& config,
+    bool showCustomLayoutEditor);
 } // namespace keyviz

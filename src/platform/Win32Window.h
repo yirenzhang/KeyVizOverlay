@@ -24,7 +24,6 @@ public:
     void SetClickThrough(bool enabled);
 
     HWND GetHwnd() const;
-    HINSTANCE GetInstance() const;
 
 private:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

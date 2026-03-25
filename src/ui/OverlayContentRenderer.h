@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "KeyboardLayoutPresets.h"
+#include "OverlayKeyRenderer.h"
 #include "OverlayPanelMetrics.h"
 #include "OverlayPanelRenderer.h"
 #include "OverlayUIConfig.h"
@@ -21,12 +22,14 @@ OverlayPanelRenderResult RenderOverlayConsole(
     int layoutPresetIndex,
     bool dragInteractionActive,
     const char* const* layoutPresetLabels,
-    int layoutPresetCount);
+    int layoutPresetCount,
+    const OverlayPanelCustomLayoutState& customLayoutState);
 
 void RenderOverlayKeyStates(
     const InputService& inputService,
     const OverlayUIConfig& uiConfig,
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects);
+    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
+    OverlayKeyLayoutEditState* editState);
 } // namespace keyviz

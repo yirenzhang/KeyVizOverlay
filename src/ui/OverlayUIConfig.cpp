@@ -7,7 +7,8 @@ const OverlayUIConfig& GetOverlayUIConfig()
     static const OverlayUIConfig config = []() {
         OverlayUIConfig value{};
         value.overlayTitle = "KeyViz Overlay";
-        value.dragButtonLabel = "Drag to move";
+        value.helpButtonLabel = "Help";
+        value.aboutButtonLabel = "About";
         value.exitButtonLabel = "Exit";
         value.layoutPresetLabel = "Layout preset";
         value.opacityLabel = "Opacity";
@@ -29,7 +30,8 @@ OverlayPanelMetricsConfig BuildOverlayPanelMetricsConfig(const OverlayUIConfig& 
 {
     OverlayPanelMetricsConfig metricsConfig{};
     metricsConfig.title = config.overlayTitle;
-    metricsConfig.dragButtonLabel = config.dragButtonLabel;
+    metricsConfig.helpButtonLabel = config.helpButtonLabel;
+    metricsConfig.aboutButtonLabel = config.aboutButtonLabel;
     metricsConfig.exitButtonLabel = config.exitButtonLabel;
     metricsConfig.layoutLabel = config.layoutPresetLabel;
     metricsConfig.opacityLabel = config.opacityLabel;

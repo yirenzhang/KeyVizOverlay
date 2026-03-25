@@ -49,14 +49,12 @@ void ApplyModifierState(std::unordered_map<std::uint32_t, KeyState>& keyStates, 
 void InputService::Initialize()
 {
     m_keyStates.clear();
-    m_recentEvents.clear();
     m_rawInputBuffer.clear();
 }
 
 void InputService::Shutdown()
 {
     m_keyStates.clear();
-    m_recentEvents.clear();
     m_rawInputBuffer.clear();
 }
 
@@ -100,8 +98,6 @@ void InputService::Update(float deltaSeconds)
 
 void InputService::HandleEvent(const InputEvent& event)
 {
-    m_recentEvents.push_back(event);
-
     const bool isDown = event.type == InputEvent::Type::KeyDown;
     const bool pressedThisFrame = isDown;
     const bool releasedThisFrame = event.type == InputEvent::Type::KeyUp;
@@ -238,6 +234,5 @@ void InputService::ClearFrameFlags()
         state.releasedThisFrame = false;
     }
 
-    m_recentEvents.clear();
 }
 }

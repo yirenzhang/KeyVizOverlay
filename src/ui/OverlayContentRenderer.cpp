@@ -12,7 +12,8 @@ OverlayPanelRenderResult RenderOverlayConsole(
     int layoutPresetIndex,
     bool dragInteractionActive,
     const char* const* layoutPresetLabels,
-    int layoutPresetCount)
+    int layoutPresetCount,
+    const OverlayPanelCustomLayoutState& customLayoutState)
 {
     return RenderOverlayPanelControls(
         panelConfig,
@@ -22,7 +23,8 @@ OverlayPanelRenderResult RenderOverlayConsole(
         layoutPresetIndex,
         layoutPresetLabels,
         layoutPresetCount,
-        dragInteractionActive);
+        dragInteractionActive,
+        customLayoutState);
 }
 
 void RenderOverlayKeyStates(
@@ -30,7 +32,8 @@ void RenderOverlayKeyStates(
     const OverlayUIConfig& uiConfig,
     const LayoutMetrics& metrics,
     KeyRowSet rowSet,
-    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects)
+    const std::unordered_map<std::uint32_t, GlowEffect>& keyGlowEffects,
+    OverlayKeyLayoutEditState* editState)
 {
     ImGui::Spacing();
     DrawKeyboardCluster(
@@ -40,6 +43,7 @@ void RenderOverlayKeyStates(
         keyGlowEffects,
         uiConfig.keyStatesSectionInset,
         uiConfig.sectionGap,
-        uiConfig.keyStatesLabel);
+        uiConfig.keyStatesLabel,
+        editState);
 }
 } // namespace keyviz
